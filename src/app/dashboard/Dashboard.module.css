@@ -42,13 +42,15 @@
 
 .kpiCard {
     background-color: var(--bg-secondary);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     padding: 1.5rem;
     border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
     gap: 1.25rem;
     box-shadow: var(--shadow-sm);
-    border: 1px solid #f1f5f9;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .kpiIcon {
@@ -150,10 +152,12 @@
 
 .chartCard {
     background-color: var(--bg-secondary);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     padding: 1.5rem;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
-    border: 1px solid #f1f5f9;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .chartHeader {

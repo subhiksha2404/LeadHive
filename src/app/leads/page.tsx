@@ -228,7 +228,8 @@ export default function LeadsPage() {
                                 <tr key={lead.id}>
                                     <td>
                                         <div className={styles.leadName}>{lead.name}</div>
-                                        <div className={styles.leadDate}>Created {new Date(lead.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}</div>
+                                        <div className={styles.leadDate}>Created at {new Date(lead.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }).replace(', ', ',     ')}</div>
+
                                     </td>
                                     <td>
                                         <div className={styles.contactItem}>
