@@ -160,6 +160,10 @@ export default function MainLayout({
                         </div>
 
                         <div className={styles.headerActions}>
+<<<<<<< HEAD
+=======
+                            
+>>>>>>> aa3a7479d8b6643fa2ae55bfe82617e32f3e93c7
                             <div className={styles.userProfile}>
                                 <div className={styles.avatar}>
                                     {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
