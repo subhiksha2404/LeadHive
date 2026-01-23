@@ -136,6 +136,7 @@ export default function Dashboard() {
         const statusColors: Record<string, string> = {
             'Enquiry': '#818cf8',
             'Contacted': '#fbbf24',
+            'Call not answered': '#ef4444',
             'Quotation Sent': '#c084fc',
             'Payment Done': '#4ade80',
             'New': '#94a3b8',

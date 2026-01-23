@@ -152,6 +152,7 @@ export default function LeadsPage() {
                         <option value="all">All Status</option>
                         <option value="Enquiry">Enquiry</option>
                         <option value="Contacted">Contacted</option>
+                        <option value="Call not answered">Call not answered</option>
                         <option value="Quotation Sent">Quotation Sent</option>
                         <option value="Payment Done">Payment Done</option>
                     </select>

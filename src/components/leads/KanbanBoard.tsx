@@ -38,6 +38,7 @@ interface Lead {
 const COLUMNS = [
     { id: 'Enquiry', title: 'Enquiry', color: '#3b82f6' },
     { id: 'Contacted', title: 'Contacted', color: '#f59e0b' },
+    { id: 'Call not answered', title: 'Call not answered', color: '#ef4444' },
     { id: 'Quotation Sent', title: 'Quotation Sent', color: '#a855f7' },
     { id: 'Payment Done', title: 'Payment Done', color: '#22c55e' },
 ];

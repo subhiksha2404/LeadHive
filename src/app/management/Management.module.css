@@ -321,6 +321,11 @@
     color: #92400e;
 }
 
+.statusCallnotanswered {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
 .statusQualified {
     background-color: #dcfce7;
     color: #166534;

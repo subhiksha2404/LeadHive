@@ -271,6 +271,7 @@ export default function ManagementPage() {
                                     <option value="" disabled>Select Status...</option>
                                     <option value="New">New</option>
                                     <option value="Contacted">Contacted</option>
+                                    <option value="Call not answered">Call not answered</option>
                                     <option value="Qualified">Qualified</option>
                                     <option value="Follow Up">Follow Up</option>
                                     <option value="Quotation Sent">Quotation Sent</option>
