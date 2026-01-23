@@ -10,7 +10,8 @@ import {
     Calendar,
     MessageSquare,
     IndianRupee,
-    ArrowLeft
+    ArrowLeft,
+    Building2
 } from 'lucide-react';
 import styles from './LeadForm.module.css';
 import Link from 'next/link';
@@ -35,11 +36,12 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
         name: initialData?.name || '',
         email: initialData?.email || '',
         phone: initialData?.phone || '',
+        company: initialData?.company || '',
         source: initialData?.source || 'Website',
         status: initialData?.status || 'New',
         priority: initialData?.priority || 'Medium',
-        interested_model: initialData?.interested_model || '',
-        budget: initialData?.budget || 0,
+        interested_service: initialData?.interested_service || '',
+        budget: initialData?.budget || '', // Initialize as string to allow clearing
         assigned_to: initialData?.assigned_to || '',
         next_follow_up: initialData?.next_follow_up || '',
         notes: initialData?.notes || ''
@@ -61,7 +63,16 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
-        const finalValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : (name === 'budget' ? Number(value) : value);
+
+        let finalValue: any;
+        if (type === 'checkbox') {
+            finalValue = (e.target as HTMLInputElement).checked;
+        } else if (name === 'budget') {
+            // Allow empty string or numbers
+            finalValue = value === '' ? '' : Number(value);
+        } else {
+            finalValue = value;
+        }
 
         setFormData((prev: any) => ({
             ...prev,
@@ -236,6 +247,19 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>
+                            <Building2 size={14} /> <span>Company</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="company"
+                            className={styles.input}
+                            value={formData.company}
+                            onChange={handleChange}
+                            placeholder="Company name"
+                        />
+                    </div>
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>
                             <Globe size={14} /> <span>Source</span>
                         </label>
                         <div className={styles.selectWrapper}>
@@ -262,9 +286,9 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
                         <label className={styles.label}>Interested Service</label>
                         <input
                             type="text"
-                            name="interested_model"
+                            name="interested_service"
                             className={styles.input}
-                            value={formData.interested_model}
+                            value={formData.interested_service}
                             onChange={handleChange}
                             placeholder="e.g., Web Development"
                         />

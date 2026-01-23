@@ -25,7 +25,7 @@ import styles from './Kanban.module.css';
 interface Lead {
     id: string;
     name: string;
-    interested_model: string;
+    interested_service: string;
     priority: string;
     budget: number;
     assigned_to: string;
@@ -77,7 +77,7 @@ function SortableItem({ lead, onPreview }: { lead: Lead, onPreview: (lead: Lead)
                 </div>
             </div>
 
-            <p className={styles.modelName}>{lead.interested_model}</p>
+            <p className={styles.modelName}>{lead.interested_service}</p>
 
             <div className={styles.cardFooter}>
                 <span className={styles.assignedUser}>{lead.assigned_to}</span>
@@ -242,7 +242,7 @@ export default function KanbanBoard({ leads, onLeadMove, onPreview }: {
                                     <IndianRupee size={10} /> <span>{activeLead.budget.toLocaleString('en-IN')}</span>
                                 </div>
                             </div>
-                            <p className={styles.modelName}>{activeLead.interested_model}</p>
+                            <p className={styles.modelName}>{activeLead.interested_service}</p>
                         </div>
                     ) : null}
                 </DragOverlay>

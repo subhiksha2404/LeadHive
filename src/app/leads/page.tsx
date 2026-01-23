@@ -217,7 +217,7 @@ export default function LeadsPage() {
                                 <th>Source</th>
                                 <th>Status</th>
                                 <th>Priority</th>
-                                <th>Interested Model</th>
+                                <th>Interested Service</th>
                                 <th>Budget</th>
                                 <th>Assigned To</th>
                                 <th>Actions</th>
@@ -243,7 +243,7 @@ export default function LeadsPage() {
                                         <span className={styles.sourceTag}>{lead.source}</span>
                                     </td>
                                     <td>
-                                        <span className={`${styles.statusBadge} ${styles['status' + (lead.status || 'New').replace(' ', '')] || styles.statusNew}`}>
+                                        <span className={`${styles.statusBadge} ${styles['status' + (lead.status || 'New').replace(/\s+/g, '')] || styles.statusNew}`}>
                                             {lead.status || 'New'}
                                         </span>
                                     </td>
@@ -252,7 +252,7 @@ export default function LeadsPage() {
                                             {lead.priority}
                                         </span>
                                     </td>
-                                    <td>{lead.interested_model}</td>
+                                    <td>{lead.interested_service}</td>
                                     <td>₹{isMounted ? lead.budget.toLocaleString('en-IN') : lead.budget.toString()}</td>
                                     <td>{lead.assigned_to}</td>
                                     <td>
@@ -287,12 +287,6 @@ export default function LeadsPage() {
                 isOpen={isDetailsOpen}
                 onClose={() => { setIsDetailsOpen(false); setViewingLead(null); }}
                 lead={viewingLead}
-                onEdit={(lead) => {
-                    setViewingLead(null);
-                    setIsDetailsOpen(false);
-                    setEditingLead(lead);
-                    setIsModalOpen(true);
-                }}
             />
         </div>
     );

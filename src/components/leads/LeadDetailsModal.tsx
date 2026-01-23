@@ -13,7 +13,8 @@ import {
     Clock,
     Plus,
     ArrowLeft,
-    CheckCircle2
+    CheckCircle2,
+    Trash2
 } from 'lucide-react';
 import styles from './LeadDetailsModal.module.css';
 
@@ -23,11 +24,72 @@ interface LeadDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     lead: Lead | null;
-    onEdit: (lead: Lead) => void;
 }
 
-export default function LeadDetailsModal({ isOpen, onClose, lead, onEdit }: LeadDetailsModalProps) {
+export default function LeadDetailsModal({ isOpen, onClose, lead }: LeadDetailsModalProps) {
+    const [activities, setActivities] = React.useState<{ id: string, title: string, date: string }[]>([]);
+    const [isAddingActivity, setIsAddingActivity] = React.useState(false);
+    const [activityInput, setActivityInput] = React.useState('');
+
+    React.useEffect(() => {
+        if (lead && lead.created_at) {
+            setActivities([
+                {
+                    id: '1',
+                    title: 'Lead Created',
+                    date: new Date(lead.created_at).toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })
+                }
+            ]);
+        }
+    }, [lead]);
+
     if (!isOpen || !lead) return null;
+
+    const handleAddActivity = () => {
+        setIsAddingActivity(true);
+    };
+
+    const saveActivity = () => {
+        if (!activityInput.trim()) return;
+
+        const newActivity = {
+            id: Date.now().toString(),
+            title: activityInput,
+            date: new Date().toLocaleString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+        };
+        setActivities([newActivity, ...activities]);
+        setActivityInput('');
+        setIsAddingActivity(false);
+    };
+
+    const deleteActivity = (id: string) => {
+        setActivities(activities.filter(a => a.id !== id));
+    };
+
+    const formatDate = (dateStr: string | undefined) => {
+        if (!dateStr) return 'Not set';
+        try {
+            return new Date(dateStr).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        } catch (e) {
+            return dateStr;
+        }
+    };
 
     return (
         <div className={styles.overlay}>
@@ -44,10 +106,6 @@ export default function LeadDetailsModal({ isOpen, onClose, lead, onEdit }: Lead
                             <span className={styles.subtitle}>Lead Details</span>
                         </div>
                     </div>
-                    <button className={styles.editBtn} onClick={() => onEdit(lead)}>
-                        <Edit2 size={16} />
-                        <span>Edit Lead</span>
-                    </button>
                 </header>
 
                 <div className={styles.contentGrid}>
@@ -92,8 +150,8 @@ export default function LeadDetailsModal({ isOpen, onClose, lead, onEdit }: Lead
                                     <p>{lead.priority}</p>
                                 </div>
                                 <div className={styles.infoItem}>
-                                    <label>Interested Model</label>
-                                    <p>{lead.interested_model}</p>
+                                    <label>Interested Service</label>
+                                    <p>{lead.interested_service}</p>
                                 </div>
                                 <div className={styles.infoItem}>
                                     <label>Budget</label>
@@ -117,19 +175,43 @@ export default function LeadDetailsModal({ isOpen, onClose, lead, onEdit }: Lead
                         <section className={styles.section}>
                             <div className={styles.sectionHeader}>
                                 <h3>Activity Timeline</h3>
-                                <button className={styles.addActivityBtn}>
+                                <button className={styles.addActivityBtn} onClick={handleAddActivity}>
                                     <Plus size={16} />
                                     <span>Add Activity</span>
                                 </button>
                             </div>
                             <div className={styles.timeline}>
-                                <div className={styles.timelineItem}>
-                                    <div className={styles.timelineIcon}><CheckCircle2 size={16} /></div>
-                                    <div className={styles.timelineContent}>
-                                        <p><strong>Lead Created</strong></p>
-                                        <span>Yesterday at 2:30 PM</span>
+                                {isAddingActivity && (
+                                    <div className={styles.activityInputArea}>
+                                        <textarea
+                                            placeholder="Enter meeting note or activity..."
+                                            value={activityInput}
+                                            onChange={(e) => setActivityInput(e.target.value)}
+                                            className={styles.activityTextarea}
+                                            autoFocus
+                                        />
+                                        <div className={styles.activityActions}>
+                                            <button onClick={saveActivity} className={styles.saveActivityBtn}>Save</button>
+                                            <button onClick={() => { setIsAddingActivity(false); setActivityInput(''); }} className={styles.cancelActivityBtn}>Cancel</button>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
+                                {activities.map(activity => (
+                                    <div key={activity.id} className={styles.timelineItem}>
+                                        <div className={styles.timelineIcon}><CheckCircle2 size={16} /></div>
+                                        <div className={styles.timelineContent}>
+                                            <p><strong>{activity.title}</strong></p>
+                                            <span>{activity.date}</span>
+                                        </div>
+                                        <button
+                                            className={styles.deleteActivityBtn}
+                                            onClick={() => deleteActivity(activity.id)}
+                                            title="Delete Activity"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
                         </section>
                     </div>
@@ -141,7 +223,7 @@ export default function LeadDetailsModal({ isOpen, onClose, lead, onEdit }: Lead
                             <div className={styles.actionButtons}>
                                 <button className={styles.actionBtn}><Phone size={16} /> Call Lead</button>
                                 <button className={styles.actionBtn}><Mail size={16} /> Send Email</button>
-                                <a href="https://meet.google.com/new" target="_blank" rel="noopener noreferrer" className={styles.actionBtn} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                <a href="https://meet.google.com/new" target="_blank" rel="noopener noreferrer" className={styles.actionBtn} style={{ textDecoration: 'none' }}>
                                     <Calendar size={16} /> Schedule Meeting
                                 </a>
                             </div>
@@ -154,21 +236,21 @@ export default function LeadDetailsModal({ isOpen, onClose, lead, onEdit }: Lead
                                     <Clock size={16} />
                                     <div>
                                         <label>Created</label>
-                                        <p>{lead.created_at}</p>
+                                        <p>{formatDate(lead.created_at)}</p>
                                     </div>
                                 </div>
                                 <div className={styles.dateItem}>
                                     <Calendar size={16} />
                                     <div>
                                         <label>Next Follow-up</label>
-                                        <p>1/25/2024</p>
+                                        <p>{formatDate(lead.next_follow_up)}</p>
                                     </div>
                                 </div>
                                 <div className={styles.dateItem}>
                                     <Clock size={16} />
                                     <div>
                                         <label>Last Updated</label>
-                                        <p>{lead.created_at}</p>
+                                        <p>{formatDate(lead.created_at)}</p>
                                     </div>
                                 </div>
                             </div>

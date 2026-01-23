@@ -135,13 +135,20 @@ export default function ManagementPage() {
 
     // --- KPI Calculations ---
     const totalLeads = leads.length;
-    const newLeads = leads.filter(l => (l.status || 'New') === 'New').length; // Logic: Status is 'New'
-    const qualifiedLeads = leads.filter(l => (l.status === 'Qualified' || l.status === 'Quotation Sent')).length; // Grouping similar positive statuses
+    const highBudgetLeads = leads.filter(l => (Number(l.budget) || 0) > 80000).length;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const overdueFollowUps = leads.filter(l => {
+        if (!l.next_follow_up) return false;
+        const followUpDate = new Date(l.next_follow_up);
+        return followUpDate < today;
+    }).length;
+
     const convertedLeads = leads.filter(l => l.status === 'Payment Done').length;
     const followUpLeads = leads.filter(l => {
         if (!l.next_follow_up) return false;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
         const followUpDate = new Date(l.next_follow_up);
         return followUpDate >= today;
     }).sort((a, b) => new Date(a.next_follow_up || '').getTime() - new Date(b.next_follow_up || '').getTime());
@@ -181,15 +188,17 @@ export default function ManagementPage() {
                 <div className={styles.summaryCard}>
                     <UserPlus size={20} className={styles.iconGreen} />
                     <div>
-                        <span className={styles.label}>New Leads</span>
-                        <div className={styles.value}>{newLeads}</div>
+                        <span className={styles.label}>High-Budget Leads</span>
+                        <div className={styles.value}>{highBudgetLeads}</div>
                     </div>
                 </div>
                 <div className={styles.summaryCard}>
-                    <Target size={20} className={styles.iconYellow} />
+                    <Target size={20} className={overdueFollowUps > 0 ? styles.iconRed : styles.iconYellow} />
                     <div>
-                        <span className={styles.label}>Qualified</span>
-                        <div className={styles.value}>{qualifiedLeads}</div>
+                        <span className={styles.label}>Overdue Follow-ups</span>
+                        <div className={styles.value} style={{ color: overdueFollowUps > 0 ? 'var(--error-color, #ef4444)' : 'inherit' }}>
+                            {overdueFollowUps}
+                        </div>
                     </div>
                 </div>
                 <div className={styles.summaryCard}>
@@ -331,7 +340,7 @@ export default function ManagementPage() {
                                     <td>{lead.email}</td>
                                     <td>{lead.phone}</td>
                                     <td>
-                                        <span className={`${styles.statusBadge} ${styles['status' + (lead.status || 'New').replace(' ', '')] || styles.statusNew}`}>
+                                        <span className={`${styles.statusBadge} ${styles['status' + (lead.status || 'New').replace(/\s+/g, '')] || styles.statusNew}`}>
                                             {lead.status || 'New'}
                                         </span>
                                     </td>
@@ -376,13 +385,6 @@ export default function ManagementPage() {
                 isOpen={isDetailsOpen}
                 onClose={() => { setIsDetailsOpen(false); setViewingLead(null); }}
                 lead={viewingLead}
-                onEdit={(lead) => {
-                    // Edit functionality is currently disabled/hidden in table, 
-                    // but we can preserve the prop or allow edit from modal if desired.
-                    // For now, just close details to be safe or log it.
-                    console.log("Edit requested for", lead);
-                    setIsDetailsOpen(false);
-                }}
             />
         </div>
     );

@@ -16,7 +16,7 @@ export interface Lead {
     source: string;
     status: 'Enquiry' | 'Contacted' | 'Quotation Sent' | 'Payment Done';
     priority: 'Low' | 'Medium' | 'High';
-    interested_model?: string;
+    interested_service?: string;
     budget?: number;
     assigned_to?: string;
     next_follow_up?: string;

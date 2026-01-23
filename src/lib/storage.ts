@@ -10,7 +10,7 @@ export interface Lead {
     priority?: string;
     budget?: number; // allow string or number handling in form, but storage should ideally be consistent
     assigned_to?: string;
-    interested_model?: string;
+    interested_service?: string;
     next_follow_up?: string;
     notes?: string;
     created_at?: string;

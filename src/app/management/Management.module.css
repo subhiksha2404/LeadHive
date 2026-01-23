@@ -10,6 +10,12 @@
     align-items: center;
 }
 
+.headerActions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
 .title {
     font-size: 1.5rem;
     font-weight: 700;
@@ -315,9 +321,9 @@
     font-weight: 600;
 }
 
-.statusNew {
-    background-color: #dbeafe;
-    color: #1e40af;
+.statusEnquiry {
+    background-color: #e0f2fe;
+    color: #0369a1;
 }
 
 .statusContacted {
@@ -325,19 +331,20 @@
     color: #92400e;
 }
 
-.statusCallnotanswered {
-    background-color: #fee2e2;
-    color: #991b1b;
+.statusCallnotanswered,
+.statusCallNotAnswered {
+    background-color: #f3f4f6;
+    color: #4b5563;
 }
 
-.statusQualified {
+.statusQuotationSent {
+    background-color: #f3e8ff;
+    color: #7e22ce;
+}
+
+.statusPaymentDone {
     background-color: #dcfce7;
-    color: #166534;
-}
-
-.statusFollowUp {
-    background-color: #ffedd5;
-    color: #9a3412;
+    color: #15803d;
 }
 
 .actions {

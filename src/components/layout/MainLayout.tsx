@@ -11,7 +11,6 @@ import {
     Users,
     Settings,
     LogOut,
-    Bell,
     Search
 } from 'lucide-react';
 import styles from './Layout.module.css';
@@ -29,7 +28,7 @@ export default function MainLayout({
 }) {
     const pathname = usePathname();
     const router = useRouter();
-    const [stats, setStats] = useState({ leadsCount: 0, notificationCount: 0 });
+    const [stats, setStats] = useState({ leadsCount: 0 });
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -86,7 +85,7 @@ export default function MainLayout({
                 return followUpDate <= tomorrow;
             }).length;
 
-            setStats({ leadsCount: leads.length, notificationCount: pendingFollowUps });
+            setStats({ leadsCount: leads.length });
         };
 
         updateCounts();
@@ -161,10 +160,6 @@ export default function MainLayout({
                         </div>
 
                         <div className={styles.headerActions}>
-                            <button className={styles.iconBtn} title={`${stats.notificationCount} follow-ups due soon`}>
-                                <Bell size={20} />
-                                {stats.notificationCount > 0 && <span className={styles.dot}></span>}
-                            </button>
                             <div className={styles.userProfile}>
                                 <div className={styles.avatar}>
                                     {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
