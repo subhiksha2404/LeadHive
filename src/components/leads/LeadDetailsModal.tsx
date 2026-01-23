@@ -92,7 +92,7 @@ export default function LeadDetailsModal({ isOpen, onClose, lead, onEdit }: Lead
                                     <p>{lead.priority}</p>
                                 </div>
                                 <div className={styles.infoItem}>
-                                    <label>Interested Model</label>
+                                    <label>Interested Service</label>
                                     <p>{lead.interested_model}</p>
                                 </div>
                                 <div className={styles.infoItem}>
