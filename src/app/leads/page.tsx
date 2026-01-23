@@ -217,7 +217,7 @@ export default function LeadsPage() {
                                 <th>Source</th>
                                 <th>Status</th>
                                 <th>Priority</th>
-                                <th>Interested Model</th>
+                                <th>Interested Service</th>
                                 <th>Budget</th>
                                 <th>Assigned To</th>
                                 <th>Actions</th>
