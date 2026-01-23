@@ -11,7 +11,6 @@ import {
     Users,
     Settings,
     LogOut,
-    Bell,
     Search
 } from 'lucide-react';
 import styles from './Layout.module.css';
@@ -161,10 +160,7 @@ export default function MainLayout({
                         </div>
 
                         <div className={styles.headerActions}>
-                            <button className={styles.iconBtn} title={`${stats.notificationCount} follow-ups due soon`}>
-                                <Bell size={20} />
-                                {stats.notificationCount > 0 && <span className={styles.dot}></span>}
-                            </button>
+                            
                             <div className={styles.userProfile}>
                                 <div className={styles.avatar}>
                                     {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
