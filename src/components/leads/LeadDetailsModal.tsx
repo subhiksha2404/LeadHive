@@ -151,11 +151,7 @@ export default function LeadDetailsModal({ isOpen, onClose, lead }: LeadDetailsM
                                 </div>
                                 <div className={styles.infoItem}>
                                     <label>Interested Service</label>
-<<<<<<< HEAD
                                     <p>{lead.interested_service}</p>
-=======
-                                    <p>{lead.interested_model}</p>
->>>>>>> aa3a7479d8b6643fa2ae55bfe82617e32f3e93c7
                                 </div>
                                 <div className={styles.infoItem}>
                                     <label>Budget</label>
