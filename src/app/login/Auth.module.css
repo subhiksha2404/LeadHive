@@ -1,0 +1,101 @@
+.container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-primary);
+    padding: 1rem;
+}
+
+.authCard {
+    background-color: var(--bg-secondary);
+    padding: 2.5rem;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.logoIcon {
+    width: 32px;
+    height: 32px;
+    background-color: var(--accent-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.logo span {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.authCard h1 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.authCard p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 2rem;
+}
+
+.form {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.formGroup label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.formGroup input {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+}
+
+.submitBtn {
+    background-color: var(--text-primary);
+    color: white;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    margin-top: 0.5rem;
+}
+
+.footer {
+    margin-top: 1.5rem;
+    font-size: 0.875rem !important;
+}
+
+.footer a {
+    color: var(--accent-primary);
+    font-weight: 600;
+}

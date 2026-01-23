@@ -1,0 +1,244 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.sectionTitle {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    font-weight: 700;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.formGroupFull {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.input,
+.select,
+.textarea {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid #e2e8f0;
+    background-color: white;
+    font-size: 0.9375rem;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.selectWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.select {
+    width: 100%;
+    appearance: none;
+    padding-right: 2.5rem;
+}
+
+.selectIcon {
+    position: absolute;
+    right: 1rem;
+    pointer-events: none;
+    color: var(--text-secondary);
+}
+
+.textarea {
+    resize: vertical;
+}
+
+.footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 2rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.cancelBtn {
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    background: none;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.submitBtn {
+    padding: 0.75rem 2rem;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 0.9375rem;
+    color: white;
+    background-color: var(--accent-primary);
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.submitBtn:hover {
+    background-color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.addFieldBtn {
+    background: none;
+    border: 1px dashed #cbd5e1;
+    color: var(--text-secondary);
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.addFieldBtn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background-color: rgba(37, 99, 235, 0.05);
+}
+
+.builderCard {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+    border-left: 4px solid var(--accent-primary);
+}
+
+.builderGrid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.builderInput,
+.builderSelect {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+}
+
+.builderActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.builderCancel {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.builderAdd {
+    background-color: var(--accent-primary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.checkboxLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    background-color: #f1f5f9;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin-top: 0.5rem;
+}
+
+.radioGroup {
+    display: flex;
+    gap: 1.5rem;
+    background-color: #f1f5f9;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin-top: 0.5rem;
+}
+
+.radioLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}

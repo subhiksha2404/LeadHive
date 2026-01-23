@@ -1,0 +1,211 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.growthBadge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #dcfce7;
+    color: #15803d;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.kpiGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+
+.kpiCard {
+    background-color: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid #f1f5f9;
+}
+
+.kpiIcon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.kpiInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.kpiLabel {
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.kpiSubtitle {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    margin-top: 0.125rem;
+    opacity: 0.8;
+}
+
+.kpiValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+/* Primary vs Secondary Hierarchy */
+.primaryCard,
+.secondaryCard {
+    border: 1px solid #e2e8f0;
+    background-color: white;
+}
+
+.primaryCard .kpiValue {
+    font-size: 1.75rem;
+}
+
+.secondaryCard .kpiValue {
+    font-size: 1.75rem;
+}
+
+.kpiBadge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pieChartWrapper {
+    position: relative;
+    width: 100%;
+}
+
+.pieCenterText {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.pieCenterValue {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.pieCenterLabel {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.chartsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+}
+
+.chartCard {
+    background-color: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid #f1f5f9;
+}
+
+.chartHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.chartHeader h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.filterGroup {
+    display: flex;
+    background-color: #f1f5f9;
+    padding: 3px;
+    border-radius: 8px;
+    gap: 2px;
+}
+
+.filterBtn {
+    background: none;
+    border: none;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filterBtn:hover {
+    color: var(--text-primary);
+}
+
+.activeFilter {
+    background-color: white;
+    color: var(--text-primary) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.pieChartWrapper,
+.barChartWrapper {
+    width: 100%;
+}
+
+@media (max-width: 1024px) {
+    .chartsGrid {
+        grid-template-columns: 1fr;
+    }
+}

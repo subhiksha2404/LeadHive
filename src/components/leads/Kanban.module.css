@@ -1,0 +1,144 @@
+.board {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    padding: 0.5rem;
+    min-height: calc(100vh - 250px);
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+.column {
+    flex: 0 0 280px;
+    background-color: #f8fafc;
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 200px);
+    border: 1px solid #e2e8f0;
+}
+
+.columnHeader {
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-sm);
+}
+
+.columnList {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.card {
+    background-color: var(--bg-secondary);
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid #e2e8f0;
+    cursor: grab;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-primary);
+}
+
+.dragging {
+    cursor: grabbing;
+    opacity: 0.9;
+    transform: scale(1.02);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: var(--accent-primary);
+    z-index: 1000;
+}
+
+.columnOver {
+    background-color: #f1f5f9;
+    border: 1px dashed var(--accent-primary);
+}
+
+.cardIndicator {
+    height: 3px;
+    width: 24px;
+    border-radius: 2px;
+    margin-bottom: 0.25rem;
+}
+
+.prioHigh {
+    background-color: #ef4444;
+}
+
+.prioMedium {
+    background-color: #f59e0b;
+}
+
+.prioLow {
+    background-color: #22c55e;
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.leadName {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.modelName {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.budgetRow {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 0.25rem;
+}
+
+.cardFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.assignedUser {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.viewBtn {
+    background: none;
+    border: none;
+    padding: 2px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.viewBtn:hover {
+    color: var(--accent-primary);
+}
