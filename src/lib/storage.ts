@@ -51,7 +51,26 @@ export interface Form {
     created_at: string;
     visits: number;
     submissions: number;
+    jotform_id?: string;
+    jotform_url?: string;
 }
+
+const normalizeValue = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    if (typeof val === 'object') {
+        if (val.first || val.last) {
+            return [val.prefix, val.first, val.middle, val.last, val.suffix].filter(Boolean).join(' ');
+        }
+        if (val.area || val.phone) {
+            return val.area ? `(${val.area}) ${val.phone}` : val.phone;
+        }
+        if (val.addr_line1) {
+            return [val.addr_line1, val.addr_line2, val.city, val.state, val.postal, val.country].filter(Boolean).join(', ');
+        }
+        return JSON.stringify(val);
+    }
+    return String(val);
+};
 
 export interface Contact {
     id: string;
@@ -323,7 +342,15 @@ export const leadsService = {
         const stored = localStorage.getItem(CONTACTS_KEY);
         if (!stored) return [];
         try {
-            return JSON.parse(stored);
+            const raw = JSON.parse(stored);
+            // Defensive normalization for existing data
+            return raw.map((c: any) => ({
+                ...c,
+                name: normalizeValue(c.name),
+                email: normalizeValue(c.email),
+                phone: normalizeValue(c.phone),
+                company: normalizeValue(c.company)
+            }));
         } catch (e) {
             return [];
         }
@@ -333,16 +360,168 @@ export const leadsService = {
         const contacts = leadsService.getContacts();
         const newContact = {
             ...contact,
+            name: normalizeValue(contact.name),
+            email: normalizeValue(contact.email),
+            phone: normalizeValue(contact.phone),
+            company: normalizeValue(contact.company),
             id: Math.random().toString(36).substr(2, 9),
             created_at: new Date().toISOString()
         };
         const updatedContacts = [newContact, ...contacts];
         localStorage.setItem(CONTACTS_KEY, JSON.stringify(updatedContacts));
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('leads-updated'));
+        }
         return newContact;
     },
 
     deleteContact: (id: string) => {
         const contacts = leadsService.getContacts().filter(c => c.id !== id);
         localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('leads-updated'));
+        }
+    },
+
+    createJotForm: async (formId: string): Promise<{ success: boolean, url?: string, error?: string }> => {
+        const form = leadsService.getFormById(formId);
+        if (!form) return { success: false, error: 'Form not found' };
+
+        const JOTFORM_API_KEY = 'b154bee5868ed3e6ef4a9664a55e7465';
+        const url = `https://api.jotform.com/user/forms?apiKey=${JOTFORM_API_KEY}`;
+
+        const params = new URLSearchParams();
+        params.append('properties[title]', form.name);
+
+        form.custom_fields.forEach((field, index) => {
+            const prefix = `questions[${index}]`;
+            let jotType = 'control_textbox';
+
+            switch (field.type) {
+                case 'textarea': jotType = 'control_textarea'; break;
+                case 'email': jotType = 'control_email'; break;
+                case 'tel': jotType = 'control_phone'; break;
+                case 'number': jotType = 'control_number'; break;
+                case 'select': jotType = 'control_dropdown'; break;
+            }
+
+            params.append(`${prefix}[type]`, jotType);
+            params.append(`${prefix}[text]`, field.label);
+            params.append(`${prefix}[order]`, (index + 1).toString());
+            params.append(`${prefix}[name]`, field.label.toLowerCase().replace(/[^a-z0-0]/g, '_'));
+
+            if (field.required) {
+                params.append(`${prefix}[required]`, 'Yes');
+            }
+
+            if (field.type === 'select' && field.options) {
+                params.append(`${prefix}[options]`, field.options.join('|'));
+            }
+        });
+
+        // Add Submit Button
+        const submitIndex = form.custom_fields.length;
+        const submitPrefix = `questions[${submitIndex}]`;
+        params.append(`${submitPrefix}[type]`, 'control_button');
+        params.append(`${submitPrefix}[text]`, 'Submit');
+        params.append(`${submitPrefix}[order]`, (submitIndex + 1).toString());
+        params.append(`${submitPrefix}[name]`, 'submit');
+        params.append(`${submitPrefix}[buttonStyle]`, 'v3-deep-amber'); // Use a nice style
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params
+            });
+
+            const data = await response.json();
+            if (data.responseCode === 200) {
+                // Store Jotform ID in the form object
+                leadsService.updateForm(formId, {
+                    jotform_id: data.content.id,
+                    jotform_url: data.content.url
+                });
+                return { success: true, url: data.content.url };
+            } else {
+                return { success: false, error: data.message || 'Failed to create Jotform' };
+            }
+        } catch (error) {
+            console.error('Jotform API Error:', error);
+            return { success: false, error: 'An unexpected error occurred' };
+        }
+    },
+
+    syncJotformSubmissions: async (): Promise<{ newContacts: number, error?: string }> => {
+        if (typeof window === 'undefined') return { newContacts: 0 };
+
+        const forms = leadsService.getForms().filter(f => f.jotform_id);
+        const contacts = leadsService.getContacts();
+        const JOTFORM_API_KEY = 'b154bee5868ed3e6ef4a9664a55e7465';
+        let totalNew = 0;
+
+        for (const form of forms) {
+            try {
+                const url = `https://api.jotform.com/form/${form.jotform_id}/submissions?apiKey=${JOTFORM_API_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.responseCode === 200) {
+                    const submissions = data.content;
+
+                    for (const sub of submissions) {
+                        // Check if already exists (using Jotform submission ID as a unique check in form_data)
+                        const exists = contacts.some(c => c.form_data?.jotform_submission_id === sub.id);
+                        if (exists) continue;
+
+                        // Create new contact from Jotform data
+                        const answers = sub.answers;
+                        let contactData: any = { jotform_submission_id: sub.id };
+                        let name = 'Unknown';
+                        let email = '';
+                        let phone = '';
+                        let company = '';
+
+                        // Extract field values
+                        Object.values(answers).forEach((ans: any) => {
+                            if (!ans.answer) return;
+
+                            const label = (ans.text || '').toLowerCase();
+                            let val = normalizeValue(ans.answer);
+
+                            if (label.includes('name')) name = val;
+                            else if (label.includes('email')) email = val;
+                            else if (label.includes('phone') || label.includes('tel')) phone = val;
+                            else if (label.includes('company')) company = val;
+
+                            // Map to internal field IDs if possible (though we don't have a perfect mapping here)
+                            const field = form.custom_fields.find(f => f.label.toLowerCase() === label);
+                            if (field) {
+                                contactData[field.id] = val;
+                            }
+                        });
+
+                        leadsService.addContact({
+                            name,
+                            email,
+                            phone,
+                            company,
+                            form_id: form.id,
+                            form_name: form.name + ' (Jotform)',
+                            form_data: { ...contactData, jotform_raw: sub }
+                        });
+                        totalNew++;
+                    }
+                }
+            } catch (err) {
+                console.error(`Error syncing Jotform ${form.id}:`, err);
+            }
+        }
+
+        return { newContacts: totalNew };
     }
 };

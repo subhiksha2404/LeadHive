@@ -7,7 +7,9 @@ import {
     Calendar,
     ArrowRight,
     Inbox,
-    Trash2
+    Trash2,
+    RefreshCw,
+    CheckCircle2
 } from 'lucide-react';
 import { leadsService, Contact } from '@/lib/storage';
 import styles from './Contacts.module.css';
@@ -17,6 +19,8 @@ export default function ContactsPage() {
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
     const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [syncResult, setSyncResult] = useState<{ count: number, show: boolean }>({ count: 0, show: false });
 
     const fetchContacts = () => {
         setContacts(leadsService.getContacts().sort((a, b) =>
@@ -24,8 +28,20 @@ export default function ContactsPage() {
         ));
     };
 
+    const handleSync = async () => {
+        setIsSyncing(true);
+        const result = await leadsService.syncJotformSubmissions();
+        if (result.newContacts > 0) {
+            fetchContacts();
+            setSyncResult({ count: result.newContacts, show: true });
+            setTimeout(() => setSyncResult(prev => ({ ...prev, show: false })), 3000);
+        }
+        setIsSyncing(false);
+    };
+
     useEffect(() => {
         fetchContacts();
+        handleSync(); // Sync on mount
     }, []);
 
     const handleDelete = (id: string) => {
@@ -48,7 +64,21 @@ export default function ContactsPage() {
                     <p className={styles.subtitle}>Review and qualify incoming submissions before adding them to your pipeline.</p>
                 </div>
                 <div className={styles.stats}>
-                    <span className={styles.badge}>{contacts.length} Pending</span>
+                    {syncResult.show && (
+                        <span className={styles.syncBadge}>
+                            <CheckCircle2 size={14} /> New: {syncResult.count}
+                        </span>
+                    )}
+                    <button
+                        onClick={handleSync}
+                        disabled={isSyncing}
+                        className={styles.refreshBtn}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                        <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+                        <span>{isSyncing ? 'Syncing...' : 'Sync Jotform'}</span>
+                    </button>
+                    <span className={styles.badge}>{contacts.length} Total</span>
                 </div>
             </header>
 

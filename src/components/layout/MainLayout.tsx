@@ -23,7 +23,7 @@ const initialNavItems = [
     { name: 'Leads', icon: Users, path: '/leads', count: 0 },
     { name: 'Pipelines', icon: Layers, path: '/pipelines' },
     { name: 'Forms', icon: FileText, path: '/forms' },
-    { name: 'Contacts', icon: Inbox, path: '/contacts' },
+    { name: 'Contacts', icon: Inbox, path: '/contacts', count: 0 },
     { name: 'Management', icon: Settings, path: '/management' },
 ];
 
@@ -34,7 +34,7 @@ export default function MainLayout({
 }) {
     const pathname = usePathname();
     const router = useRouter();
-    const [stats, setStats] = useState({ leadsCount: 0 });
+    const [stats, setStats] = useState({ leadsCount: 0, contactsCount: 0 });
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -78,6 +78,7 @@ export default function MainLayout({
     useEffect(() => {
         const updateCounts = () => {
             const leads = leadsService.getLeads();
+            const contacts = leadsService.getContacts();
             const now = new Date();
             now.setHours(0, 0, 0, 0);
 
@@ -91,7 +92,7 @@ export default function MainLayout({
                 return followUpDate <= tomorrow;
             }).length;
 
-            setStats({ leadsCount: leads.length });
+            setStats({ leadsCount: leads.length, contactsCount: contacts.length });
         };
 
         updateCounts();
@@ -108,8 +109,11 @@ export default function MainLayout({
         if (item.name === 'Leads') {
             return { ...item, count: stats.leadsCount };
         }
+        if (item.name === 'Contacts') {
+            return { ...item, count: stats.contactsCount };
+        }
         return item;
-    }), [stats.leadsCount]);
+    }), [stats.leadsCount, stats.contactsCount]);
 
     if (loading) {
         return (
@@ -141,7 +145,9 @@ export default function MainLayout({
                                     >
                                         <Icon size={18} />
                                         <span>{item.name}</span>
-                                        {item.name === 'Leads' && <span className={styles.badge}>{item.count}</span>}
+                                        {item.count !== undefined && item.count > 0 && (
+                                            <span className={styles.badge}>{item.count}</span>
+                                        )}
                                     </Link>
                                 );
                             })}

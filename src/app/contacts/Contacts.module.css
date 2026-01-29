@@ -26,6 +26,7 @@
 .stats {
     display: flex;
     gap: 1rem;
+    align-items: center;
 }
 
 .badge {
@@ -158,4 +159,65 @@
     background: #fee2e2;
     color: #ef4444;
     border-color: #fee2e2;
+}
+
+.refreshBtn {
+    background: white;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refreshBtn:hover:not(:disabled) {
+    background: var(--bg-secondary);
+    border-color: var(--text-tertiary);
+}
+
+.refreshBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.syncBadge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f0fdf4;
+    color: #16a34a;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+:global(.animate-spin) {
+    animation: spin 1s linear infinite;
 }

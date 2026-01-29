@@ -37,10 +37,9 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
         if (isOpen && contact) {
             const pData = leadsService.getPipelines();
             setPipelines(pData);
-            if (pData.length > 0) {
-                setPipelineId(pData[0].id);
-                setStages(leadsService.getStages(pData[0].id));
-            }
+            // Don't auto-select - leave empty by default
+            setPipelineId('');
+            setStages([]);
 
             // Intelligent Note Extraction
             // Find fields that define "Notes" or "Message"
@@ -84,12 +83,15 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
         e.preventDefault();
         if (!contact || !pipelineId || !stageId) return;
 
+        // Extract platform from form name (e.g., "Website contact form" -> "Website")
+        const platformName = contact.form_name.split(' ')[0];
+
         leadsService.addLead({
             name: contact.name,
             email: contact.email,
             phone: contact.phone || '',
             company: contact.company || '',
-            source: `${contact.form_name} (Form)`,
+            source: `${platformName} (Form)`,
             pipeline_id: pipelineId,
             stage_id: stageId,
             status: 'New', // Placeholder
@@ -127,9 +129,20 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
                                     <label>Pipeline</label>
                                     <select
                                         value={pipelineId}
-                                        onChange={(e) => handlePipelineChange(e.target.value)}
+                                        onChange={(e) => {
+                                            const pid = e.target.value;
+                                            setPipelineId(pid);
+                                            if (pid) {
+                                                setStages(leadsService.getStages(pid));
+                                                setStageId('');
+                                            } else {
+                                                setStages([]);
+                                                setStageId('');
+                                            }
+                                        }}
                                         required
                                     >
+                                        <option value="">Select Pipeline</option>
                                         {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                     </select>
                                 </div>
@@ -139,7 +152,9 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
                                         value={stageId}
                                         onChange={(e) => setStageId(e.target.value)}
                                         required
+                                        disabled={!pipelineId}
                                     >
+                                        <option value="">Select Stage</option>
                                         {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                     </select>
                                 </div>

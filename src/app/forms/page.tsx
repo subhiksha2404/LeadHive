@@ -10,14 +10,18 @@ import {
     FileText,
     BarChart2,
     CheckCircle2,
-    Edit
+    Edit,
+    FileCode,
+    Box
 } from 'lucide-react';
 import { leadsService, Form } from '@/lib/storage';
+import JotFormModal from '@/components/forms/JotFormModal';
 import styles from './Forms.module.css';
 
 export default function FormsPage() {
     const [forms, setForms] = useState<Form[]>([]);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [jotFormTarget, setJotFormTarget] = useState<{ id: string, name: string } | null>(null);
 
     useEffect(() => {
         setForms(leadsService.getForms());
@@ -40,6 +44,12 @@ export default function FormsPage() {
         navigator.clipboard.writeText(url);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const handleCreateJotForm = (form: Form, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setJotFormTarget({ id: form.id, name: form.name });
     };
 
     return (
@@ -81,6 +91,14 @@ export default function FormsPage() {
                                         <Link href={`/f/${form.id}`} target="_blank" className={styles.iconBtn} title="View Live">
                                             <ExternalLink size={16} />
                                         </Link>
+                                        <button
+                                            onClick={(e) => handleCreateJotForm(form, e)}
+                                            className={styles.iconBtn}
+                                            title="Create Jotform"
+                                            style={{ color: '#fa8900' }}
+                                        >
+                                            <Box size={16} />
+                                        </button>
                                         <Link href={`/forms/${form.id}/edit`} className={styles.iconBtn} title="Edit Form">
                                             <Edit size={16} />
                                         </Link>
@@ -116,6 +134,15 @@ export default function FormsPage() {
                     </div>
                 )}
             </main>
+
+            {jotFormTarget && (
+                <JotFormModal
+                    isOpen={!!jotFormTarget}
+                    onClose={() => setJotFormTarget(null)}
+                    formId={jotFormTarget.id}
+                    formName={jotFormTarget.name}
+                />
+            )}
         </div>
     );
 }
