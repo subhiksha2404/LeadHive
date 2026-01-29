@@ -1,80 +1,112 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Plus,
     Search,
-    Filter,
     ChevronDown,
-    Grid2X2,
     List,
-    Eye,
-    Edit2,
+    Grid2X2,
     Mail,
-    Phone
+    Phone,
+    Eye,
+    Edit2
 } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './Leads.module.css';
 import KanbanBoard from '@/components/leads/KanbanBoard';
-import LeadModal from '@/components/leads/LeadModal';
 import LeadDetailsModal from '@/components/leads/LeadDetailsModal';
 import { leadsService } from '@/lib/storage';
 
+
 export default function LeadsPage() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const initialSearch = searchParams.get('q') || '';
+    const initialPipelineId = searchParams.get('p');
 
     const [view, setView] = useState<'list' | 'kanban'>('list');
     const [search, setSearch] = useState(initialSearch);
     const [leads, setLeads] = useState<any[]>([]);
+    const [pipelines, setPipelines] = useState<any[]>([]);
+    const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(initialPipelineId);
+    const [stages, setStages] = useState<any[]>([]);
     const [statusFilter, setStatusFilter] = useState('all');
     const [sourceFilter, setSourceFilter] = useState('all');
     const [sortBy, setSortBy] = useState('Date Created');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingLead, setEditingLead] = useState<any>(null);
     const [viewingLead, setViewingLead] = useState<any>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    // Update search if URL changes (though mostly for initial load)
-    useEffect(() => {
-        const query = searchParams.get('q');
-        if (query !== null) {
-            setSearch(query);
+    const fetchData = useCallback(() => {
+        const pipelinesData = leadsService.getPipelines();
+
+        let activePid = selectedPipelineId;
+        if (pipelinesData.length === 0) {
+            const newP = leadsService.ensureDefaultPipeline();
+            setPipelines([newP]);
+            activePid = newP.id;
+        } else {
+            setPipelines(pipelinesData);
+            if (!activePid) {
+                activePid = pipelinesData[0].id;
+            }
         }
-    }, [searchParams]);
+
+        if (activePid !== selectedPipelineId) {
+            setSelectedPipelineId(activePid);
+        }
+
+        const leadsData = leadsService.getLeads();
+        setLeads(leadsData);
+        setLoading(false);
+    }, [selectedPipelineId]);
+
+    // Update URL when pipeline changes
+    useEffect(() => {
+        if (isMounted && selectedPipelineId) {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('p', selectedPipelineId);
+            router.replace(`/leads?${params.toString()}`, { scroll: false });
+        }
+
+        setStatusFilter('all');
+    }, [selectedPipelineId, isMounted, router, searchParams]);
 
     useEffect(() => {
         setIsMounted(true);
-        // Initial load
-        setLeads(leadsService.getLeads());
+        fetchData();
 
-        // Listen for updates
-        const handleLeadsUpdate = () => {
-            setLeads(leadsService.getLeads());
-        };
+        const handleLeadsUpdated = () => fetchData();
+        window.addEventListener('leads-updated', handleLeadsUpdated);
+        return () => window.removeEventListener('leads-updated', handleLeadsUpdated);
+    }, [fetchData]);
 
-        window.addEventListener('leads-updated', handleLeadsUpdate);
-        return () => window.removeEventListener('leads-updated', handleLeadsUpdate);
-    }, []);
+    const selectedPipeline = useMemo(() => {
+        return pipelines.find(p => p.id === selectedPipelineId) || pipelines[0] || null;
+    }, [pipelines, selectedPipelineId]);
 
-    const handleAddLead = (data: any) => {
-        if (editingLead) {
-            leadsService.updateLead(editingLead.id, data);
-        } else {
-            leadsService.addLead(data);
+    useEffect(() => {
+        if (selectedPipeline) {
+            setStages(leadsService.getStages(selectedPipeline.id));
         }
-        setEditingLead(null);
-    };
+    }, [selectedPipeline]);
 
+    const activeLeads = useMemo(() => {
+        if (selectedPipelineId === 'general') return leads;
+        if (!selectedPipeline) return [];
+        const isFirstPipeline = pipelines[0]?.id === selectedPipeline.id;
 
-    const handleLeadMove = (id: string, newStatus: string) => {
-        leadsService.updateLead(id, { status: newStatus });
-    };
+        return leads.filter(l =>
+            l.pipeline_id === selectedPipeline.id ||
+            (isFirstPipeline && (!l.pipeline_id || l.pipeline_id === ''))
+        );
+    }, [leads, selectedPipeline, pipelines, selectedPipelineId]);
 
-    const getFilteredLeads = () => {
-        let filtered = [...leads];
+    const filteredLeads = useMemo(() => {
+        let filtered = [...activeLeads];
 
         // Search
         if (search) {
@@ -93,7 +125,7 @@ export default function LeadsPage() {
 
         // Source Filter
         if (sourceFilter !== 'all') {
-            filtered = filtered.filter(l => l.source === sourceFilter);
+            filtered = filtered.filter(l => l.source && l.source.toLowerCase().includes(sourceFilter.toLowerCase()));
         }
 
         // Sorting
@@ -106,7 +138,6 @@ export default function LeadsPage() {
                 const priorityOrder: any = { 'High': 3, 'Medium': 2, 'Low': 1 };
                 return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
             } else if (sortBy === 'Follow up due') {
-                // Ascending order: Nearest follow-ups first. Nulls last.
                 const aDate = a.next_follow_up ? new Date(a.next_follow_up).getTime() : Infinity;
                 const bDate = b.next_follow_up ? new Date(b.next_follow_up).getTime() : Infinity;
                 return aDate - bDate;
@@ -115,21 +146,25 @@ export default function LeadsPage() {
         });
 
         return filtered;
-    };
+    }, [activeLeads, search, statusFilter, sourceFilter, sortBy]);
 
-    const filteredLeads = getFilteredLeads();
+    const handleLeadMove = (id: string, newStatus: string, stageId?: string) => {
+        leadsService.updateLead(id, { status: newStatus, stage_id: stageId });
+    };
 
     return (
         <div className={styles.container}>
             <header className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>Lead Management</h1>
-                    <p className={styles.subtitle}>Manage and track all your leads in one place.</p>
+                    <h1 className={styles.title}>{selectedPipeline?.name || 'Pipeline'} Management</h1>
+                    <p className={styles.subtitle}>Track your leads through the {selectedPipeline?.name || 'pipeline'} stages.</p>
                 </div>
-                <Link href="/leads/new" className={styles.addBtn}>
-                    <Plus size={20} />
-                    <span>Add New Lead</span>
-                </Link>
+                <div className={styles.headerActions}>
+                    <Link href="/leads/new" className={styles.addBtn}>
+                        <Plus size={20} />
+                        <span>Add New Lead</span>
+                    </Link>
+                </div>
             </header>
 
             {/* Filters Bar */}
@@ -144,17 +179,17 @@ export default function LeadsPage() {
                     />
                 </div>
 
+
                 <div className={styles.selectWrapper}>
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
+                        disabled={selectedPipelineId === 'general'}
                     >
-                        <option value="all">All Status</option>
-                        <option value="Enquiry">Enquiry</option>
-                        <option value="Contacted">Contacted</option>
-                        <option value="Call not answered">Call not answered</option>
-                        <option value="Quotation Sent">Quotation Sent</option>
-                        <option value="Payment Done">Payment Done</option>
+                        <option value="all">All Stages</option>
+                        {stages.map(s => (
+                            <option key={s.id} value={s.name}>{s.name}</option>
+                        ))}
                     </select>
                     <ChevronDown size={16} />
                 </div>
@@ -179,35 +214,64 @@ export default function LeadsPage() {
                     <button
                         className={`${styles.toggleBtn} ${view === 'list' ? styles.activeToggle : ''}`}
                         onClick={() => setView('list')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingRight: '1rem' }}
                     >
                         <List size={18} />
+                        <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>List View</span>
                     </button>
                     <button
                         className={`${styles.toggleBtn} ${view === 'kanban' ? styles.activeToggle : ''}`}
-                        onClick={() => setView('kanban')}
+                        onClick={() => {
+                            if (selectedPipelineId === 'general') {
+                                const firstPipeline = pipelines[0];
+                                if (firstPipeline) setSelectedPipelineId(firstPipeline.id);
+                            }
+                            setView('kanban');
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingRight: '1rem' }}
                     >
                         <Grid2X2 size={18} />
+                        <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>Kanban View</span>
                     </button>
                 </div>
             </div>
 
             <div className={styles.statsSummary}>
                 <span>Showing {filteredLeads.length} of {leads.length} leads</span>
-                <div className={styles.sortBy}>
-                    <span>Sort by:</span>
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                    >
-                        <option>Date Created</option>
-                        <option>Budget</option>
-                        <option>Priority</option>
-                        <option>Follow up due</option>
-                    </select>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: 'auto' }}>
+                    <div className={styles.filterBox}>
+                        <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>Pipeline</span>
+                        <select
+                            value={selectedPipelineId || ''}
+                            onChange={(e) => setSelectedPipelineId(e.target.value)}
+                            style={{ minWidth: '180px' }}
+                        >
+                            {view === 'list' && <option value="general">Global View (All Pipelines)</option>}
+                            {pipelines.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className={styles.filterBox}>
+                        <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>Sort by</span>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                        >
+                            <option>Date Created</option>
+                            <option>Budget</option>
+                            <option>Priority</option>
+                            <option>Follow up due</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            {view === 'list' ? (
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>Loading Leads...</div>
+            ) : view === 'list' ? (
                 <div className={styles.tableWrapper}>
                     <table className={styles.table}>
                         <thead>
@@ -215,7 +279,8 @@ export default function LeadsPage() {
                                 <th>Name</th>
                                 <th>Contact</th>
                                 <th>Source</th>
-                                <th>Status</th>
+                                <th>Pipeline</th>
+                                <th>Stage</th>
                                 <th>Priority</th>
                                 <th>Interested Service</th>
                                 <th>Budget</th>
@@ -224,59 +289,74 @@ export default function LeadsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredLeads.map((lead) => (
-                                <tr key={lead.id}>
-                                    <td>
-                                        <div className={styles.leadName}>{lead.name}</div>
-                                        <div className={styles.leadDate}>Created at {new Date(lead.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }).replace(', ', ',     ')}</div>
+                            {filteredLeads.map((lead) => {
+                                const leadPipeline = pipelines.find(p => p.id === lead.pipeline_id) || pipelines[0];
+                                const leadStage = leadsService.getStages(lead.pipeline_id || leadPipeline?.id).find(s => s.id === lead.stage_id);
 
-                                    </td>
-                                    <td>
-                                        <div className={styles.contactItem}>
-                                            <Mail size={14} /> <span>{lead.email}</span>
-                                        </div>
-                                        <div className={styles.contactItem}>
-                                            <Phone size={14} /> <span>{lead.phone}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className={styles.sourceTag}>{lead.source}</span>
-                                    </td>
-                                    <td>
-                                        <span className={`${styles.statusBadge} ${styles['status' + (lead.status || 'New').replace(/\s+/g, '')] || styles.statusNew}`}>
-                                            {lead.status || 'New'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`${styles.priorityBadge} ${styles['priority' + lead.priority]}`}>
-                                            {lead.priority}
-                                        </span>
-                                    </td>
-                                    <td>{lead.interested_service}</td>
-                                    <td>₹{isMounted ? lead.budget.toLocaleString('en-IN') : lead.budget.toString()}</td>
-                                    <td>{lead.assigned_to}</td>
-                                    <td>
-                                        <div className={styles.actions}>
-                                            <button
-                                                onClick={() => { setViewingLead(lead); setIsDetailsOpen(true); }}
-                                                title="View Details"
-                                                className={styles.actionBtn}
-                                            >
-                                                <Eye size={18} />
-                                            </button>
-                                            <Link href={`/leads/edit/${lead.id}`} title="Edit" className={styles.actionBtn}>
-                                                <Edit2 size={18} />
-                                            </Link>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                return (
+                                    <tr key={lead.id}>
+                                        <td>
+                                            <div className={styles.leadName}>{lead.name}</div>
+                                            <div className={styles.leadDate}>Created at {new Date(lead.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }).replace(', ', ',     ')}</div>
+
+                                        </td>
+                                        <td>
+                                            <div className={styles.contactItem}>
+                                                <Mail size={14} /> <span>{lead.email}</span>
+                                            </div>
+                                            <div className={styles.contactItem}>
+                                                <Phone size={14} /> <span>{lead.phone}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={styles.sourceTag}>{lead.source}</span>
+                                        </td>
+                                        <td>
+                                            <span style={{ fontWeight: 500 }}>{leadPipeline?.name || 'Main Pipeline'}</span>
+                                        </td>
+                                        <td>
+                                            <span className={`${styles.statusBadge}`} style={{
+                                                backgroundColor: leadStage?.color ? `${leadStage.color}15` : '#f1f5f9',
+                                                color: leadStage?.color || '#64748b',
+                                                borderColor: leadStage?.color ? `${leadStage.color}30` : '#e2e8f0',
+                                                borderStyle: 'solid',
+                                                borderWidth: '1px'
+                                            }}>
+                                                {leadStage?.name || lead.status || 'New'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`${styles.priorityBadge} ${styles['priority' + lead.priority]}`}>
+                                                {lead.priority}
+                                            </span>
+                                        </td>
+                                        <td>{lead.interested_service}</td>
+                                        <td>₹{isMounted ? lead.budget.toLocaleString('en-IN') : lead.budget.toString()}</td>
+                                        <td>{lead.assigned_to}</td>
+                                        <td>
+                                            <div className={styles.actions}>
+                                                <button
+                                                    onClick={() => { setViewingLead(lead); setIsDetailsOpen(true); }}
+                                                    title="View Details"
+                                                    className={styles.actionBtn}
+                                                >
+                                                    <Eye size={18} />
+                                                </button>
+                                                <Link href={`/leads/edit/${lead.id}`} title="Edit" className={styles.actionBtn}>
+                                                    <Edit2 size={18} />
+                                                </Link>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
             ) : (
                 <KanbanBoard
                     leads={filteredLeads}
+                    stages={stages}
                     onLeadMove={handleLeadMove}
                     onPreview={(lead) => { setViewingLead(lead); setIsDetailsOpen(true); }}
                 />

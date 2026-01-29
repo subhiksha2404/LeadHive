@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import {
     User,
     Mail,
@@ -11,10 +12,14 @@ import {
     MessageSquare,
     IndianRupee,
     ArrowLeft,
-    Building2
+    Building2,
+    Layers,
+    GitBranch,
+    MapPin
 } from 'lucide-react';
 import styles from './LeadForm.module.css';
 import Link from 'next/link';
+import { leadsService, Pipeline, Stage } from '@/lib/storage';
 
 interface LeadFormProps {
     initialData?: any;
@@ -32,6 +37,9 @@ interface CustomField {
 }
 
 export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormProps) {
+    const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+    const [availableStages, setAvailableStages] = useState<Stage[]>([]);
+
     const [formData, setFormData] = useState({
         name: initialData?.name || '',
         email: initialData?.email || '',
@@ -44,7 +52,9 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
         budget: initialData?.budget || '', // Initialize as string to allow clearing
         assigned_to: initialData?.assigned_to || '',
         next_follow_up: initialData?.next_follow_up || '',
-        notes: initialData?.notes || ''
+        notes: initialData?.notes || '',
+        pipeline_id: initialData?.pipeline_id || '',
+        stage_id: initialData?.stage_id || ''
     });
 
     const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -55,14 +65,62 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
         boxType: 'single'
     });
 
+    useEffect(() => {
+        const pLayers = leadsService.getPipelines();
+        setPipelines(pLayers);
+
+        if (pLayers.length > 0) {
+            const currentPid = formData.pipeline_id || pLayers[0].id;
+            const stages = leadsService.getStages(currentPid);
+            setAvailableStages(stages);
+
+            if (!formData.pipeline_id) {
+                setFormData(prev => ({
+                    ...prev,
+                    pipeline_id: pLayers[0].id,
+                    stage_id: stages.length > 0 ? stages[0].id : '',
+                    status: stages.length > 0 ? stages[0].name : prev.status
+                }));
+            }
+        }
+    }, []);
+
+    const handlePipelineChange = (pipelineId: string) => {
+        const stages = leadsService.getStages(pipelineId);
+        setAvailableStages(stages);
+        setFormData(prev => ({
+            ...prev,
+            pipeline_id: pipelineId,
+            stage_id: stages.length > 0 ? stages[0].id : '',
+            status: stages.length > 0 ? stages[0].name : prev.status
+        }));
+    };
+
+    const handleStageChange = (stageId: string) => {
+        const stage = availableStages.find(s => s.id === stageId);
+        setFormData(prev => ({
+            ...prev,
+            stage_id: stageId,
+            status: stage ? stage.name : prev.status
+        }));
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Merge custom fields into submittable data if needed, or send as is
         onSubmit({ ...formData, customFields });
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
+
+        if (name === 'pipeline_id') {
+            handlePipelineChange(value);
+            return;
+        }
+        if (name === 'stage_id') {
+            handleStageChange(value);
+            return;
+        }
 
         let finalValue: any;
         if (type === 'checkbox') {
@@ -280,6 +338,50 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
             </div>
 
             <div className={styles.section}>
+                <h3 className={styles.sectionTitle}>Sales Pipeline</h3>
+                <div className={styles.grid}>
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>
+                            <Layers size={14} /> <span>Pipeline</span>
+                        </label>
+                        <div className={styles.selectWrapper}>
+                            <select
+                                name="pipeline_id"
+                                className={styles.select}
+                                value={formData.pipeline_id}
+                                onChange={handleChange}
+                                required
+                            >
+                                {pipelines.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className={styles.selectIcon} size={16} />
+                        </div>
+                    </div>
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>
+                            <GitBranch size={14} /> <span>Stage</span>
+                        </label>
+                        <div className={styles.selectWrapper}>
+                            <select
+                                name="stage_id"
+                                className={styles.select}
+                                value={formData.stage_id}
+                                onChange={handleChange}
+                                required
+                            >
+                                {availableStages.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className={styles.selectIcon} size={16} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className={styles.section}>
                 <h3 className={styles.sectionTitle}>Deal Details</h3>
                 <div className={styles.grid}>
                     <div className={styles.formGroup}>
@@ -292,22 +394,6 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
                             onChange={handleChange}
                             placeholder="e.g., Web Development"
                         />
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Status</label>
-                        <div className={styles.selectWrapper}>
-                            <select name="status" className={styles.select} value={formData.status} onChange={handleChange}>
-                                <option value="New">New</option>
-                                <option value="Enquiry">Enquiry</option>
-                                <option value="Contacted">Contacted</option>
-                                <option value="Call not answered">Call not answered</option>
-                                <option value="Qualified">Qualified</option>
-                                <option value="Follow Up">Follow Up</option>
-                                <option value="Quotation Sent">Quotation Sent</option>
-                                <option value="Payment Done">Payment Done</option>
-                            </select>
-                            <ChevronDown className={styles.selectIcon} size={16} />
-                        </div>
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>
@@ -334,16 +420,17 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
                         </div>
                     </div>
                     <div className={styles.formGroup}>
-                        <label className={styles.label}>Assigned To</label>
-                        <div className={styles.selectWrapper}>
-                            <select name="assigned_to" className={styles.select} value={formData.assigned_to} onChange={handleChange}>
-                                <option value="">Unassigned</option>
-                                <option value="Sarah Johnson">Sarah Johnson</option>
-                                <option value="Mike Chen">Mike Chen</option>
-                                <option value="Alex Rodriguez">Alex Rodriguez</option>
-                            </select>
-                            <ChevronDown className={styles.selectIcon} size={16} />
-                        </div>
+                        <label className={styles.label}>
+                            <User size={14} /> <span>Assigned To</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="assigned_to"
+                            className={styles.input}
+                            value={formData.assigned_to}
+                            onChange={handleChange}
+                            placeholder="Enter name"
+                        />
                     </div>
                     {renderCustomFields('deal')}
                 </div>

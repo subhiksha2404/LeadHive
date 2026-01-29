@@ -109,16 +109,30 @@ export default function ManagementPage() {
                     const content = e.target?.result as string;
                     const parsedLeads = JSON.parse(content);
                     if (Array.isArray(parsedLeads)) {
+                        const defaultPipeline = leadsService.ensureDefaultPipeline();
+                        const defaultStages = leadsService.getStages(defaultPipeline.id);
+                        const defaultStage = defaultStages[0];
+
+                        const leadsToImport: any[] = [];
                         parsedLeads.forEach((lead: any) => {
-                            // Ensure ID is unique or let addLead handle it if we strip ID (but addLead generates new ID)
-                            // Ideally check if ID exists to update, else add. simplicity: just add/update
+                            const leadToSave = {
+                                ...lead,
+                                pipeline_id: lead.pipeline_id || defaultPipeline?.id,
+                                stage_id: lead.stage_id || defaultStage?.id,
+                                status: lead.status || defaultStage?.name || 'New'
+                            };
+
                             if (lead.id && leadsService.getLeadById(lead.id)) {
-                                leadsService.updateLead(lead.id, lead);
+                                leadsService.updateLead(lead.id, leadToSave);
                             } else {
-                                const { id, ...rest } = lead; // strip ID to let addLead generate one if needed, or keep if we trust it
-                                leadsService.addLead(rest);
+                                const { id, ...rest } = leadToSave;
+                                leadsToImport.push(rest);
                             }
                         });
+
+                        if (leadsToImport.length > 0) {
+                            leadsService.addLeadsBulk(leadsToImport);
+                        }
                         alert('Leads imported successfully!');
                     } else {
                         alert('Invalid file format. Expected an array of leads.');
@@ -202,13 +216,6 @@ export default function ManagementPage() {
                     </div>
                 </div>
                 <div className={styles.summaryCard}>
-                    <CheckCircle2 size={20} className={styles.iconPurple} />
-                    <div>
-                        <span className={styles.label}>Converted</span>
-                        <div className={styles.value}>{convertedLeads}</div>
-                    </div>
-                </div>
-                <div className={styles.summaryCard}>
                     <Calendar size={20} className={styles.iconRed} />
                     <div>
                         <span className={styles.label}>Nearest Follow-up</span>
@@ -278,13 +285,9 @@ export default function ManagementPage() {
                                     value={pendingAction.value || ''}
                                 >
                                     <option value="" disabled>Select Status...</option>
-                                    <option value="New">New</option>
-                                    <option value="Contacted">Contacted</option>
-                                    <option value="Call not answered">Call not answered</option>
-                                    <option value="Qualified">Qualified</option>
-                                    <option value="Follow Up">Follow Up</option>
-                                    <option value="Quotation Sent">Quotation Sent</option>
-                                    <option value="Payment Done">Payment Done</option>
+                                    {leadsService.getAllStages().map(stage => (
+                                        <option key={stage.id} value={stage.name}>{stage.name}</option>
+                                    ))}
                                 </select>
                             )}
 
@@ -318,64 +321,80 @@ export default function ManagementPage() {
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Phone</th>
-                                <th>Status</th>
+                                <th>Pipeline</th>
+                                <th>Stage</th>
                                 <th>Assigned To</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {leads.map(lead => (
-                                <tr key={lead.id} className={selectedLeads.includes(lead.id) ? styles.selectedRow : ''}>
-                                    <td>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedLeads.includes(lead.id)}
-                                            onChange={() => handleSelectLead(lead.id)}
-                                        />
-                                    </td>
-                                    <td>
-                                        <div className={styles.name}>{lead.name}</div>
-                                        <div className={styles.company}>{lead.company}</div>
-                                    </td>
-                                    <td>{lead.email}</td>
-                                    <td>{lead.phone}</td>
-                                    <td>
-                                        <span className={`${styles.statusBadge} ${styles['status' + (lead.status || 'New').replace(/\s+/g, '')] || styles.statusNew}`}>
-                                            {lead.status || 'New'}
-                                        </span>
-                                    </td>
-                                    <td>{lead.assigned_to}</td>
-                                    <td>
-                                        <div className={styles.actions}>
-                                            <button
-                                                onClick={() => { setViewingLead(lead); setIsDetailsOpen(true); }}
-                                                title="View Details"
-                                                className={styles.actionBtn}
-                                            >
-                                                <Eye size={16} />
-                                            </button>
-                                            <a
-                                                href="https://meet.google.com/new"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                title="Schedule Meet"
-                                                className={styles.actionBtn}
-                                            >
-                                                <Video size={16} />
-                                            </a>
-                                            <a
-                                                href={`https://mail.google.com/mail/?view=cm&fs=1&to=${lead.email}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                title="Send Gmail"
-                                                className={styles.actionBtn}
-                                            >
-                                                <Mail size={16} />
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {leads.map(lead => {
+                                const allPipelines = leadsService.getPipelines();
+                                const leadPipeline = allPipelines.find(p => p.id === lead.pipeline_id) || allPipelines[0];
+                                const leadStage = leadsService.getStages(lead.pipeline_id || leadPipeline?.id).find(s => s.id === lead.stage_id);
+
+                                return (
+                                    <tr key={lead.id} className={selectedLeads.includes(lead.id) ? styles.selectedRow : ''}>
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedLeads.includes(lead.id)}
+                                                onChange={() => handleSelectLead(lead.id)}
+                                            />
+                                        </td>
+                                        <td>
+                                            <div className={styles.name}>{lead.name}</div>
+                                            <div className={styles.company}>{lead.company}</div>
+                                        </td>
+                                        <td>{lead.email}</td>
+                                        <td>{lead.phone}</td>
+                                        <td>
+                                            <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{leadPipeline?.name || 'Main Pipeline'}</div>
+                                        </td>
+                                        <td>
+                                            <span className={`${styles.statusBadge}`} style={{
+                                                backgroundColor: leadStage?.color ? `${leadStage.color}15` : '#f1f5f9',
+                                                color: leadStage?.color || '#64748b',
+                                                borderColor: leadStage?.color ? `${leadStage.color}30` : '#e2e8f0',
+                                                borderStyle: 'solid',
+                                                borderWidth: '1px'
+                                            }}>
+                                                {leadStage?.name || lead.status || 'New'}
+                                            </span>
+                                        </td>
+                                        <td>{lead.assigned_to}</td>
+                                        <td>
+                                            <div className={styles.actions}>
+                                                <button
+                                                    onClick={() => { setViewingLead(lead); setIsDetailsOpen(true); }}
+                                                    title="View Details"
+                                                    className={styles.actionBtn}
+                                                >
+                                                    <Eye size={16} />
+                                                </button>
+                                                <a
+                                                    href="https://meet.google.com/new"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    title="Schedule Meet"
+                                                    className={styles.actionBtn}
+                                                >
+                                                    <Video size={16} />
+                                                </a>
+                                                <a
+                                                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${lead.email}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    title="Send Gmail"
+                                                    className={styles.actionBtn}
+                                                >
+                                                    <Mail size={16} />
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

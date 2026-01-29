@@ -1,0 +1,159 @@
+.container {
+    min-height: 100vh;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    font-family: inherit;
+}
+
+.centered {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+}
+
+.formCard {
+    background: white;
+    width: 100%;
+    max-width: 500px;
+    padding: 2.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.5rem 0;
+}
+
+.subtitle {
+    color: #64748b;
+    font-size: 1rem;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.formGroup label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.formGroup input,
+.formGroup textarea {
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    color: #1e293b;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.submitBtn {
+    margin-top: 1rem;
+    background: #6366f1;
+    color: white;
+    padding: 0.875rem;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.submitBtn:hover {
+    background: #4f46e5;
+    transform: translateY(-1px);
+}
+
+.footer {
+    margin-top: 2rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+}
+
+/* Success State */
+.successCard {
+    background: white;
+    padding: 3rem;
+    border-radius: 1rem;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    animation: slideUp 0.5s ease;
+}
+
+.successIcon {
+    color: #10b981;
+    margin-bottom: 1.5rem;
+}
+
+.successCard h1 {
+    color: #1e293b;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.successCard p {
+    color: #64748b;
+    margin-bottom: 2rem;
+}
+
+.resetBtn {
+    background: none;
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    color: #64748b;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.resetBtn:hover {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

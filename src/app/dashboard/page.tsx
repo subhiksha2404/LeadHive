@@ -91,6 +91,11 @@ export default function Dashboard() {
     const [sourceData, setSourceData] = useState<any[]>([]);
     const [distributionFilter, setDistributionFilter] = useState('Month');
     const [acquisitionFilter, setAcquisitionFilter] = useState('Month');
+
+    // Pipeline Filter
+    const [pipelines, setPipelines] = useState<any[]>([]);
+    const [selectedPipelineId, setSelectedPipelineId] = useState<string>('all');
+
     const [isMounted, setIsMounted] = useState(false);
 
 
@@ -117,6 +122,7 @@ export default function Dashboard() {
             return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
         }).length;
 
+
         setStats({
             totalLeads,
             conversionRate: Number(conversionRate),
@@ -125,15 +131,11 @@ export default function Dashboard() {
         });
 
         // --- Calculate Chart Data ---
+        const allStages = leadsService.getAllStages();
+        const pData = leadsService.getPipelines();
+        setPipelines(pData);
 
-        // Status Distribution
-        const statusCounts: Record<string, number> = {};
-        leads.forEach(l => {
-            const status = l.status || 'New';
-            statusCounts[status] = (statusCounts[status] || 0) + 1;
-        });
-
-        const statusColors: Record<string, string> = {
+        const stageColorMap: Record<string, string> = {
             'Enquiry': '#818cf8',
             'Contacted': '#fbbf24',
             'Call not answered': '#ef4444',
@@ -144,17 +146,49 @@ export default function Dashboard() {
             'Qualified': '#60a5fa'
         };
 
+        // Overlay custom stage colors
+        allStages.forEach(s => {
+            stageColorMap[s.name] = s.color;
+        });
+
+        // Use filtered leads for chart if filter active
+        const chartLeads = selectedPipelineId === 'all'
+            ? leads
+            : leads.filter(l => l.pipeline_id === selectedPipelineId);
+
+        // Status Distribution
+        const statusCounts: Record<string, number> = {};
+        chartLeads.forEach(l => {
+            const status = l.status || 'New';
+            statusCounts[status] = (statusCounts[status] || 0) + 1;
+        });
+
         const calculatedStatusData = Object.keys(statusCounts).map(status => ({
             name: status,
             value: statusCounts[status],
-            color: statusColors[status] || '#cbd5e1'
+            color: stageColorMap[status] || '#cbd5e1'
         }));
         setStatusData(calculatedStatusData);
 
         // Source Distribution
         const sourceCounts: Record<string, number> = {};
         leads.forEach(l => {
-            const source = l.source || 'Direct';
+            let source = l.source || 'Direct';
+
+            // Extract platform from "Platform (Form)" format
+            // e.g., "Website (Form)" -> "Website", "Google Ads (Form)" -> "Google Ads"
+            const formMatch = source.match(/^(.+?)\s*\(Form\)$/i);
+            if (formMatch) {
+                source = formMatch[1].trim();
+            } else if (source.toLowerCase().startsWith('form:')) {
+                // Handle "Form: Platform name" format
+                // e.g., "Form: Website contact form" -> "Website"
+                const platformMatch = source.match(/^form:\s*(\w+)/i);
+                if (platformMatch) {
+                    source = platformMatch[1];
+                }
+            }
+
             sourceCounts[source] = (sourceCounts[source] || 0) + 1;
         });
 
@@ -164,7 +198,7 @@ export default function Dashboard() {
         }));
         setSourceData(calculatedSourceData);
 
-    }, []);
+    }, [selectedPipelineId]);
 
     return (
         <div className={styles.container}>
@@ -241,15 +275,25 @@ export default function Dashboard() {
                     <div className={styles.chartHeader}>
                         <h3>Pipeline Distribution</h3>
                         <div className={styles.filterGroup}>
-                            {['Week', 'Month', 'Year'].map((p) => (
-                                <button
-                                    key={p}
-                                    className={`${styles.filterBtn} ${distributionFilter === p ? styles.activeFilter : ''}`}
-                                    onClick={() => setDistributionFilter(p)}
-                                >
-                                    {p}
-                                </button>
-                            ))}
+                            <select
+                                value={selectedPipelineId}
+                                onChange={(e) => setSelectedPipelineId(e.target.value)}
+                                className={styles.chartSelect}
+                                style={{
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '0.375rem',
+                                    border: '1px solid #e2e8f0',
+                                    fontSize: '0.875rem',
+                                    outline: 'none',
+                                    cursor: 'pointer',
+                                    marginRight: '0.5rem'
+                                }}
+                            >
+                                <option value="all">All Pipelines</option>
+                                {pipelines.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                     <div className={styles.pieChartWrapper}>

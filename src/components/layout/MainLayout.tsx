@@ -11,13 +11,19 @@ import {
     Users,
     Settings,
     LogOut,
-    Search
+    Search,
+    Layers,
+    FileText,
+    Inbox
 } from 'lucide-react';
 import styles from './Layout.module.css';
 
 const initialNavItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Leads', icon: Users, path: '/leads', count: 0 },
+    { name: 'Pipelines', icon: Layers, path: '/pipelines' },
+    { name: 'Forms', icon: FileText, path: '/forms' },
+    { name: 'Contacts', icon: Inbox, path: '/contacts' },
     { name: 'Management', icon: Settings, path: '/management' },
 ];
 
@@ -164,9 +170,6 @@ export default function MainLayout({
                                 <div className={styles.avatar}>
                                     {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
                                 </div>
-                                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                    {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-                                </span>
                             </div>
                             <button onClick={handleLogout} className={styles.logoutBtn} title="Logout" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' }}>
                                 <LogOut size={18} />

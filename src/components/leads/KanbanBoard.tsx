@@ -22,6 +22,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Eye, Edit2, IndianRupee } from 'lucide-react';
 import styles from './Kanban.module.css';
 
+
 interface Lead {
     id: string;
     name: string;
@@ -33,15 +34,14 @@ interface Lead {
     email: string;
     phone: string;
     status: string;
+    stage_id?: string;
 }
 
-const COLUMNS = [
-    { id: 'Enquiry', title: 'Enquiry', color: '#3b82f6' },
-    { id: 'Contacted', title: 'Contacted', color: '#f59e0b' },
-    { id: 'Call not answered', title: 'Call not answered', color: '#ef4444' },
-    { id: 'Quotation Sent', title: 'Quotation Sent', color: '#a855f7' },
-    { id: 'Payment Done', title: 'Payment Done', color: '#22c55e' },
-];
+interface Stage {
+    id: string;
+    name: string;
+    color: string;
+}
 
 function SortableItem({ lead, onPreview }: { lead: Lead, onPreview: (lead: Lead) => void }) {
     const {
@@ -126,9 +126,10 @@ function KanbanColumn({ id, title, color, children }: { id: string, title: strin
     );
 }
 
-export default function KanbanBoard({ leads, onLeadMove, onPreview }: {
+export default function KanbanBoard({ leads, stages, onLeadMove, onPreview }: {
     leads: Lead[],
-    onLeadMove: (id: string, newStatus: string) => void,
+    stages: Stage[],
+    onLeadMove: (id: string, newStatus: string, stageId?: string) => void,
     onPreview: (lead: Lead) => void
 }) {
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -143,7 +144,10 @@ export default function KanbanBoard({ leads, onLeadMove, onPreview }: {
         })
     );
 
-    const getLeadsByStatus = (status: string) => leads.filter(l => l.status === status);
+    const getLeadsByStage = (stageId: string) => leads.filter(l => l.stage_id === stageId);
+
+    // For legacy/backward compatibility or if stage_id is missing, fallback to status name matching
+    const getLeadsByStatus = (statusName: string) => leads.filter(l => l.status === statusName);
 
     const handleDragStart = (event: any) => {
         setActiveId(event.active.id);
@@ -156,34 +160,32 @@ export default function KanbanBoard({ leads, onLeadMove, onPreview }: {
         const activeId = active.id;
         const overId = over.id;
 
-        // Find the active lead
         const activeLead = leads.find(l => l.id === activeId);
         if (!activeLead) return;
 
-        // Identify where we are dropping
-        let newStatus = '';
+        let targetStageId = '';
+        let targetStatus = '';
 
-        // Is it a column?
-        const column = COLUMNS.find(col => col.id === overId);
+        const column = stages.find(s => s.id === overId);
         if (column) {
-            newStatus = column.id;
+            targetStageId = column.id;
+            targetStatus = column.name;
         } else {
-            // Is it another card?
             const overLead = leads.find(l => l.id === overId);
             if (overLead) {
-                newStatus = overLead.status;
+                targetStageId = overLead.stage_id || '';
+                targetStatus = overLead.status;
             }
         }
 
-        if (newStatus && activeLead.status !== newStatus) {
-            onLeadMove(activeId, newStatus);
+        if (targetStageId && activeLead.stage_id !== targetStageId) {
+            onLeadMove(activeId, targetStatus, targetStageId);
         }
     };
 
     const handleDragEnd = (event: any) => {
         const { active, over } = event;
         setActiveId(null);
-
         if (!over) return;
 
         const activeId = active.id;
@@ -192,19 +194,23 @@ export default function KanbanBoard({ leads, onLeadMove, onPreview }: {
         const activeLead = leads.find(l => l.id === activeId);
         if (!activeLead) return;
 
-        let newStatus = '';
-        const column = COLUMNS.find(col => col.id === overId);
+        let targetStageId = '';
+        let targetStatus = '';
+
+        const column = stages.find(s => s.id === overId);
         if (column) {
-            newStatus = column.id;
+            targetStageId = column.id;
+            targetStatus = column.name;
         } else {
             const overLead = leads.find(l => l.id === overId);
             if (overLead) {
-                newStatus = overLead.status;
+                targetStageId = overLead.stage_id || '';
+                targetStatus = overLead.status;
             }
         }
 
-        if (newStatus && activeLead.status !== newStatus) {
-            onLeadMove(activeId, newStatus);
+        if (targetStageId && activeLead.stage_id !== targetStageId) {
+            onLeadMove(activeId, targetStatus, targetStageId);
         }
     };
 
@@ -219,18 +225,24 @@ export default function KanbanBoard({ leads, onLeadMove, onPreview }: {
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
             >
-                {COLUMNS.map(col => (
-                    <KanbanColumn key={col.id} id={col.id} title={col.title} color={col.color}>
-                        <SortableContext
-                            items={getLeadsByStatus(col.id).map(l => l.id)}
-                            strategy={verticalListSortingStrategy}
-                        >
-                            {getLeadsByStatus(col.id).map(lead => (
-                                <SortableItem key={lead.id} lead={lead} onPreview={onPreview} />
-                            ))}
-                        </SortableContext>
-                    </KanbanColumn>
-                ))}
+                {stages.map(stage => {
+                    const stageLeads = getLeadsByStage(stage.id);
+                    // Fallback to name matching if no leads by ID (helpful for migrating from hardcoded stages)
+                    const displayLeads = stageLeads.length > 0 ? stageLeads : getLeadsByStatus(stage.name);
+
+                    return (
+                        <KanbanColumn key={stage.id} id={stage.id} title={stage.name} color={stage.color}>
+                            <SortableContext
+                                items={displayLeads.map(l => l.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {displayLeads.map(lead => (
+                                    <SortableItem key={lead.id} lead={lead} onPreview={onPreview} />
+                                ))}
+                            </SortableContext>
+                        </KanbanColumn>
+                    );
+                })}
 
                 <DragOverlay>
                     {activeLead ? (
