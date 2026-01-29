@@ -19,10 +19,10 @@ import {
 } from 'lucide-react';
 import styles from './LeadForm.module.css';
 import Link from 'next/link';
-import { leadsService, Pipeline, Stage } from '@/lib/storage';
+import { leadsService, Pipeline, Stage, Lead } from '@/lib/storage';
 
 interface LeadFormProps {
-    initialData?: any;
+    initialData?: Partial<Lead> & { customFields?: CustomField[] };
     onSubmit: (data: any) => void;
     onCancel?: () => void;
 }
@@ -33,7 +33,7 @@ interface CustomField {
     label: string;
     dataType: 'text' | 'numeric' | 'boolean';
     boxType: 'single' | 'multi' | 'checkbox' | 'radio';
-    value: any;
+    value: unknown;
 }
 
 export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormProps) {
@@ -132,7 +132,7 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
             finalValue = value;
         }
 
-        setFormData((prev: any) => ({
+        setFormData((prev) => ({
             ...prev,
             [name]: finalValue
         }));
@@ -146,11 +146,11 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
         if (!fieldBuilder.label) return;
 
         const newField: CustomField = {
-            id: Math.random().toString(36).substr(2, 9),
+            id: Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
             sectionId,
             label: fieldBuilder.label,
-            dataType: fieldBuilder.dataType as any,
-            boxType: fieldBuilder.boxType as any,
+            dataType: fieldBuilder.dataType as 'text' | 'numeric' | 'boolean',
+            boxType: fieldBuilder.boxType as 'single' | 'multi' | 'checkbox' | 'radio',
             value: fieldBuilder.dataType === 'boolean' ? false : (fieldBuilder.dataType === 'numeric' ? 0 : '')
         };
 
@@ -166,7 +166,7 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
                     <input
                         type={field.dataType === 'numeric' ? 'number' : 'text'}
                         className={styles.input}
-                        value={field.value}
+                        value={field.value as string | number | undefined}
                         onChange={(e) => handleCustomFieldChange(field.id, field.dataType === 'numeric' ? Number(e.target.value) : e.target.value)}
                     />
                 )}
@@ -174,7 +174,7 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
                     <textarea
                         className={styles.textarea}
                         rows={2}
-                        value={field.value}
+                        value={field.value as string | number | undefined}
                         onChange={(e) => handleCustomFieldChange(field.id, e.target.value)}
                     />
                 )}
@@ -182,7 +182,7 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
                     <label className={styles.checkboxLabel}>
                         <input
                             type="checkbox"
-                            checked={field.value}
+                            checked={field.value as boolean}
                             onChange={(e) => handleCustomFieldChange(field.id, e.target.checked)}
                         />
                         <span>Enable {field.label}</span>

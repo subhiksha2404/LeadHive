@@ -31,24 +31,24 @@ export default function PipelinesPage() {
     const [stageName, setStageName] = useState('');
     const [stageColor, setStageColor] = useState('#6366f1');
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     const fetchData = () => {
         const data = leadsService.getPipelines();
         setPipelines(data);
         if (data.length > 0 && !selectedPipeline) {
             setSelectedPipeline(data[0]);
-            fetchStages(data[0].id);
+            fetchDataStages(data[0].id);
         } else if (selectedPipeline) {
-            fetchStages(selectedPipeline.id);
+            fetchDataStages(selectedPipeline.id);
         }
     };
 
-    const fetchStages = (pipelineId: string) => {
+    const fetchDataStages = (pipelineId: string) => {
         setStages(leadsService.getStages(pipelineId));
     };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     const handleCreatePipeline = (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,7 +59,7 @@ export default function PipelinesPage() {
             // If it's the first pipeline, select it
             if (pipelines.length === 0) {
                 setSelectedPipeline(newP);
-                fetchStages(newP.id);
+                fetchDataStages(newP.id);
             }
         }
         setPipelineName('');
@@ -101,13 +101,13 @@ export default function PipelinesPage() {
         setStageColor('#6366f1');
         setEditingStage(null);
         setIsStageModalOpen(false);
-        fetchStages(selectedPipeline.id);
+        fetchDataStages(selectedPipeline.id);
     };
 
     const handleDeleteStage = (id: string) => {
         if (confirm('Are you sure you want to delete this stage?')) {
             leadsService.deleteStage(id);
-            if (selectedPipeline) fetchStages(selectedPipeline.id);
+            if (selectedPipeline) fetchDataStages(selectedPipeline.id);
         }
     };
 
@@ -144,7 +144,7 @@ export default function PipelinesPage() {
                                     className={`${styles.pipelineItem} ${selectedPipeline?.id === p.id ? styles.activePipeline : ''}`}
                                     onClick={() => {
                                         setSelectedPipeline(p);
-                                        fetchStages(p.id);
+                                        fetchDataStages(p.id);
                                     }}
                                 >
                                     <span>{p.name}</span>

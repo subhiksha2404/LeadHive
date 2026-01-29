@@ -80,7 +80,7 @@ export interface Contact {
     company?: string;
     form_id: string;
     form_name: string;
-    form_data: Record<string, any>;
+    form_data: Record<string, unknown>;
     created_at: string;
 }
 
@@ -344,7 +344,7 @@ export const leadsService = {
         try {
             const raw = JSON.parse(stored);
             // Defensive normalization for existing data
-            return raw.map((c: any) => ({
+            return (raw as Contact[]).map((c) => ({
                 ...c,
                 name: normalizeValue(c.name),
                 email: normalizeValue(c.email),
@@ -480,18 +480,19 @@ export const leadsService = {
 
                         // Create new contact from Jotform data
                         const answers = sub.answers;
-                        let contactData: any = { jotform_submission_id: sub.id };
+                        const contactData: Record<string, unknown> = { jotform_submission_id: sub.id };
                         let name = 'Unknown';
                         let email = '';
                         let phone = '';
                         let company = '';
 
                         // Extract field values
-                        Object.values(answers).forEach((ans: any) => {
+                        Object.values(answers).forEach((ansValue) => {
+                            const ans = ansValue as { text?: string, answer?: unknown };
                             if (!ans.answer) return;
 
                             const label = (ans.text || '').toLowerCase();
-                            let val = normalizeValue(ans.answer);
+                            const val = normalizeValue(ans.answer);
 
                             if (label.includes('name')) name = val;
                             else if (label.includes('email')) email = val;

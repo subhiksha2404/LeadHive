@@ -26,10 +26,11 @@ import {
 import styles from './Dashboard.module.css';
 
 const RADIAN = Math.PI / 180;
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, color }: any) => {
+const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, name, color }: { cx: number; cy: number; midAngle?: number; innerRadius: number; outerRadius: number; percent?: number; name?: string; color?: string }) => {
     const RADIAN = Math.PI / 180;
-    const sin = Math.sin(-midAngle * RADIAN);
-    const cos = Math.cos(-midAngle * RADIAN);
+    const angle = midAngle || 0;
+    const sin = Math.sin(-angle * RADIAN);
+    const cos = Math.cos(-angle * RADIAN);
     const sx = cx + (outerRadius + 5) * cos;
     const sy = cy + (outerRadius + 5) * sin;
     const mx = cx + (outerRadius + 20) * cos;
@@ -59,23 +60,24 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
             >
                 {name}
             </text>
-            {/* Percentage Badge */}
-            <text
-                x={ex + (cos >= 0 ? 8 : -8)}
-                y={ey}
-                dy={14}
-                textAnchor={textAnchor}
-                fill="#64748b"
-                fontSize={10}
-                fontWeight={500}
-            >
-                {`${(percent * 100).toFixed(0)}%`}
-            </text>
+            {percent !== undefined && (
+                <text
+                    x={ex + (cos >= 0 ? 8 : -8)}
+                    y={ey}
+                    dy={14}
+                    textAnchor={textAnchor}
+                    fill="#64748b"
+                    fontSize={10}
+                    fontWeight={500}
+                >
+                    {`${(percent * 100).toFixed(0)}%`}
+                </text>
+            )}
         </g>
     );
 };
 
-import { leadsService } from '@/lib/storage';
+import { leadsService, Pipeline, Lead } from '@/lib/storage';
 
 // ... existing imports ...
 
@@ -87,13 +89,13 @@ export default function Dashboard() {
         newLeads: 0
     });
 
-    const [statusData, setStatusData] = useState<any[]>([]);
-    const [sourceData, setSourceData] = useState<any[]>([]);
+    const [statusData, setStatusData] = useState<{ name: string; value: number; color: string }[]>([]);
+    const [sourceData, setSourceData] = useState<{ name: string; leads: number }[]>([]);
     const [distributionFilter, setDistributionFilter] = useState('Month');
     const [acquisitionFilter, setAcquisitionFilter] = useState('Month');
 
     // Pipeline Filter
-    const [pipelines, setPipelines] = useState<any[]>([]);
+    const [pipelines, setPipelines] = useState<Pipeline[]>([]);
     const [selectedPipelineId, setSelectedPipelineId] = useState<string>('all');
 
     const [isMounted, setIsMounted] = useState(false);

@@ -46,7 +46,7 @@ export default function EditLeadPage() {
                 </button>
                 <div className={styles.titleSection}>
                     <h1 className={styles.title}>Edit Lead: {lead.name}</h1>
-                    <p className={styles.subtitle}>Update the prospect's details and track their progress in the pipeline.</p>
+                    <p className={styles.subtitle}>Update the prospect&apos;s details and track their progress in the pipeline.</p>
                 </div>
             </header>
 

@@ -3,9 +3,9 @@ import { leadsService } from '@/lib/storage';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const formId = params.id;
+    const { id: formId } = await params;
     const form = leadsService.getFormById(formId);
 
     if (!form) {

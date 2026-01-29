@@ -17,7 +17,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './Leads.module.css';
 import KanbanBoard from '@/components/leads/KanbanBoard';
 import LeadDetailsModal from '@/components/leads/LeadDetailsModal';
-import { leadsService } from '@/lib/storage';
+import { leadsService, Lead as StorageLead, Pipeline, Stage } from '@/lib/storage';
 
 
 export default function LeadsPage() {
@@ -28,41 +28,37 @@ export default function LeadsPage() {
 
     const [view, setView] = useState<'list' | 'kanban'>('list');
     const [search, setSearch] = useState(initialSearch);
-    const [leads, setLeads] = useState<any[]>([]);
-    const [pipelines, setPipelines] = useState<any[]>([]);
-    const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(initialPipelineId);
-    const [stages, setStages] = useState<any[]>([]);
+    const [leads, setLeads] = useState<StorageLead[]>(() => {
+        if (typeof window !== 'undefined') return leadsService.getLeads();
+        return [];
+    });
+    const [pipelines, setPipelines] = useState<Pipeline[]>(() => {
+        if (typeof window !== 'undefined') {
+            const data = leadsService.getPipelines();
+            return data.length > 0 ? data : [leadsService.ensureDefaultPipeline()];
+        }
+        return [];
+    });
+    const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(() => {
+        if (typeof window !== 'undefined') {
+            return initialPipelineId || (pipelines.length > 0 ? pipelines[0].id : null);
+        }
+        return initialPipelineId;
+    });
+    const [stages, setStages] = useState<Stage[]>([]);
     const [statusFilter, setStatusFilter] = useState('all');
     const [sourceFilter, setSourceFilter] = useState('all');
     const [sortBy, setSortBy] = useState('Date Created');
-    const [viewingLead, setViewingLead] = useState<any>(null);
+    const [viewingLead, setViewingLead] = useState<StorageLead | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     const fetchData = useCallback(() => {
-        const pipelinesData = leadsService.getPipelines();
-
-        let activePid = selectedPipelineId;
-        if (pipelinesData.length === 0) {
-            const newP = leadsService.ensureDefaultPipeline();
-            setPipelines([newP]);
-            activePid = newP.id;
-        } else {
-            setPipelines(pipelinesData);
-            if (!activePid) {
-                activePid = pipelinesData[0].id;
-            }
-        }
-
-        if (activePid !== selectedPipelineId) {
-            setSelectedPipelineId(activePid);
-        }
-
         const leadsData = leadsService.getLeads();
         setLeads(leadsData);
         setLoading(false);
-    }, [selectedPipelineId]);
+    }, []);
 
     // Update URL when pipeline changes
     useEffect(() => {
@@ -130,16 +126,18 @@ export default function LeadsPage() {
 
         // Sorting
         filtered.sort((a, b) => {
+            const aLead = a as StorageLead;
+            const bLead = b as StorageLead;
             if (sortBy === 'Date Created') {
-                return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+                return new Date(bLead.created_at || 0).getTime() - new Date(aLead.created_at || 0).getTime();
             } else if (sortBy === 'Budget') {
-                return (Number(b.budget) || 0) - (Number(a.budget) || 0);
+                return (Number(bLead.budget) || 0) - (Number(aLead.budget) || 0);
             } else if (sortBy === 'Priority') {
-                const priorityOrder: any = { 'High': 3, 'Medium': 2, 'Low': 1 };
-                return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+                const priorityOrder: Record<string, number> = { 'High': 3, 'Medium': 2, 'Low': 1 };
+                return (priorityOrder[bLead.priority || 'Medium'] || 0) - (priorityOrder[aLead.priority || 'Medium'] || 0);
             } else if (sortBy === 'Follow up due') {
-                const aDate = a.next_follow_up ? new Date(a.next_follow_up).getTime() : Infinity;
-                const bDate = b.next_follow_up ? new Date(b.next_follow_up).getTime() : Infinity;
+                const aDate = aLead.next_follow_up ? new Date(aLead.next_follow_up).getTime() : Infinity;
+                const bDate = bLead.next_follow_up ? new Date(bLead.next_follow_up).getTime() : Infinity;
                 return aDate - bDate;
             }
             return 0;
@@ -297,7 +295,7 @@ export default function LeadsPage() {
                                     <tr key={lead.id}>
                                         <td>
                                             <div className={styles.leadName}>{lead.name}</div>
-                                            <div className={styles.leadDate}>Created at {new Date(lead.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }).replace(', ', ',     ')}</div>
+                                            <div className={styles.leadDate}>Created at {new Date(lead.created_at || Date.now()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }).replace(', ', ',     ')}</div>
 
                                         </td>
                                         <td>
@@ -331,7 +329,7 @@ export default function LeadsPage() {
                                             </span>
                                         </td>
                                         <td>{lead.interested_service}</td>
-                                        <td>₹{isMounted ? lead.budget.toLocaleString('en-IN') : lead.budget.toString()}</td>
+                                        <td>₹{isMounted ? (lead.budget || 0).toLocaleString('en-IN') : (lead.budget || 0).toString()}</td>
                                         <td>{lead.assigned_to}</td>
                                         <td>
                                             <div className={styles.actions}>

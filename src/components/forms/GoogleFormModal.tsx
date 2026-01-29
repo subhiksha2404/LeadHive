@@ -46,9 +46,9 @@ export default function GoogleFormModal({ isOpen, onClose, script, formName }: G
                         <ol>
                             <li>Click the <strong>Copy Script</strong> button below.</li>
                             <li>Go to <a href="https://script.google.com" target="_blank" rel="noopener noreferrer">script.google.com <ExternalLink size={12} style={{ display: 'inline' }} /></a>.</li>
-                            <li>Click <strong>"New Project"</strong>.</li>
+                            <li>Click <strong>&quot;New Project&quot;</strong>.</li>
                             <li>Delete any existing code and <strong>paste</strong> the copied script.</li>
-                            <li>Click the <strong>"Run"</strong> button (play icon) at the top.</li>
+                            <li>Click the <strong>&quot;Run&quot;</strong> button (play icon) at the top.</li>
                             <li>Grant the necessary permissions. Your form will be created and the link will be emailed to you!</li>
                         </ol>
                     </div>

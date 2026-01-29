@@ -17,12 +17,6 @@ export default function JotFormModal({ isOpen, onClose, formId, formName }: JotF
     const [jotFormUrl, setJotFormUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (isOpen && status === 'idle') {
-            handleCreate();
-        }
-    }, [isOpen]);
-
     const handleCreate = async () => {
         setStatus('loading');
         const result = await leadsService.createJotForm(formId);
@@ -35,6 +29,12 @@ export default function JotFormModal({ isOpen, onClose, formId, formName }: JotF
             setStatus('error');
         }
     };
+
+    useEffect(() => {
+        if (isOpen && status === 'idle') {
+            handleCreate();
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -56,7 +56,7 @@ export default function JotFormModal({ isOpen, onClose, formId, formName }: JotF
                         <div style={{ textAlign: 'center', padding: '3rem 0' }}>
                             <Loader2 size={48} className="animate-spin" style={{ margin: '0 auto 1.5rem', color: '#fa8900' }} />
                             <h3>Creating your Jotform...</h3>
-                            <p className={styles.description}>We're building your form with all custom fields.</p>
+                            <p className={styles.description}>We&apos;re building your form with all custom fields.</p>
                         </div>
                     )}
 
@@ -109,9 +109,9 @@ export default function JotFormModal({ isOpen, onClose, formId, formName }: JotF
                                 }}>
                                     <h4 style={{ color: '#9a3412', margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>Important: Check your API Key permissions</h4>
                                     <p style={{ color: '#c2410c', fontSize: '0.85rem', margin: 0, lineHeight: '1.4' }}>
-                                        Jotform says your API key is not authorized. This usually means it is set to <strong>"Read Only"</strong>.
+                                        Jotform says your API key is not authorized. This usually means it is set to <strong>&quot;Read Only&quot;</strong>.
                                         <br /><br />
-                                        Please go to your <strong>Jotform Account &gt; API</strong> settings and change the permissions of your API key to <strong>"Full Access"</strong>.
+                                        Please go to your <strong>Jotform Account &gt; API</strong> settings and change the permissions of your API key to <strong>&quot;Full Access&quot;</strong>.
                                     </p>
                                 </div>
                             )}
