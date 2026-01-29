@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 import styles from './LeadForm.module.css';
 import Link from 'next/link';
-import { leadsService, Pipeline, Stage, Lead } from '@/lib/storage';
+import { leadsService } from '@/lib/storage';
+import { Pipeline, Stage, Lead } from '@/types/lead';
 
 interface LeadFormProps {
     initialData?: Partial<Lead> & { customFields?: CustomField[] };

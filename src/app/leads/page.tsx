@@ -17,7 +17,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './Leads.module.css';
 import KanbanBoard from '@/components/leads/KanbanBoard';
 import LeadDetailsModal from '@/components/leads/LeadDetailsModal';
-import { leadsService, Lead as StorageLead, Pipeline, Stage } from '@/lib/storage';
+import { leadsService } from '@/lib/storage';
+import { Lead, Pipeline, Stage } from '@/types/lead';
 
 
 export default function LeadsPage() {
@@ -28,7 +29,7 @@ export default function LeadsPage() {
 
     const [view, setView] = useState<'list' | 'kanban'>('list');
     const [search, setSearch] = useState(initialSearch);
-    const [leads, setLeads] = useState<StorageLead[]>(() => {
+    const [leads, setLeads] = useState<Lead[]>(() => {
         if (typeof window !== 'undefined') return leadsService.getLeads();
         return [];
     });
@@ -49,7 +50,7 @@ export default function LeadsPage() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [sourceFilter, setSourceFilter] = useState('all');
     const [sortBy, setSortBy] = useState('Date Created');
-    const [viewingLead, setViewingLead] = useState<StorageLead | null>(null);
+    const [viewingLead, setViewingLead] = useState<Lead | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -126,8 +127,8 @@ export default function LeadsPage() {
 
         // Sorting
         filtered.sort((a, b) => {
-            const aLead = a as StorageLead;
-            const bLead = b as StorageLead;
+            const aLead = a as Lead;
+            const bLead = b as Lead;
             if (sortBy === 'Date Created') {
                 return new Date(bLead.created_at || 0).getTime() - new Date(aLead.created_at || 0).getTime();
             } else if (sortBy === 'Budget') {

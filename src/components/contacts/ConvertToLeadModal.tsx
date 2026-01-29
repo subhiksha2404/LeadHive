@@ -10,7 +10,8 @@ import {
     Tag,
     UserCircle
 } from 'lucide-react';
-import { leadsService, Contact, Pipeline, Stage } from '@/lib/storage';
+import { leadsService, Contact } from '@/lib/storage';
+import { Pipeline, Stage } from '@/types/lead';
 import styles from './ConvertToLeadModal.module.css';
 
 interface ConvertToLeadModalProps {
@@ -55,7 +56,7 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
                 );
 
                 if (noteField && contact.form_data[noteField.id]) {
-                    extractedNotes = contact.form_data[noteField.id];
+                    extractedNotes = String(contact.form_data[noteField.id]);
                 }
             }
 
@@ -64,7 +65,7 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
                 const keys = Object.keys(contact.form_data);
                 const likelyNoteKey = keys.find(k => k.toLowerCase().includes('note') || k.toLowerCase().includes('message'));
                 if (likelyNoteKey) {
-                    extractedNotes = contact.form_data[likelyNoteKey];
+                    extractedNotes = String(contact.form_data[likelyNoteKey]);
                 }
             }
 

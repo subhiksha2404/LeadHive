@@ -23,25 +23,7 @@ import { Eye, Edit2, IndianRupee } from 'lucide-react';
 import styles from './Kanban.module.css';
 
 
-interface Lead {
-    id: string;
-    name: string;
-    interested_service: string;
-    priority: string;
-    budget: number;
-    assigned_to: string;
-    source: string;
-    email: string;
-    phone: string;
-    status: string;
-    stage_id?: string;
-}
-
-interface Stage {
-    id: string;
-    name: string;
-    color: string;
-}
+import { Lead, Stage } from '@/types/lead';
 
 function SortableItem({ lead, onPreview }: { lead: Lead, onPreview: (lead: Lead) => void }) {
     const {
@@ -73,11 +55,11 @@ function SortableItem({ lead, onPreview }: { lead: Lead, onPreview: (lead: Lead)
             <div className={styles.cardHeader}>
                 <h4 className={styles.leadName}>{lead.name}</h4>
                 <div className={styles.budgetRow}>
-                    <IndianRupee size={10} /> <span>{lead.budget.toLocaleString('en-IN')}</span>
+                    <IndianRupee size={10} /> <span>{(lead.budget || 0).toLocaleString('en-IN')}</span>
                 </div>
             </div>
 
-            <p className={styles.modelName}>{lead.interested_service}</p>
+            <p className={styles.modelName}>{lead.interested_service || 'No interest specified'}</p>
 
             <div className={styles.cardFooter}>
                 <span className={styles.assignedUser}>{lead.assigned_to}</span>
@@ -251,10 +233,10 @@ export default function KanbanBoard({ leads, stages, onLeadMove, onPreview }: {
                             <div className={styles.cardHeader}>
                                 <h4 className={styles.leadName}>{activeLead.name}</h4>
                                 <div className={styles.budgetRow}>
-                                    <IndianRupee size={10} /> <span>{activeLead.budget.toLocaleString('en-IN')}</span>
+                                    <IndianRupee size={10} /> <span>{(activeLead.budget || 0).toLocaleString('en-IN')}</span>
                                 </div>
                             </div>
-                            <p className={styles.modelName}>{activeLead.interested_service}</p>
+                            <p className={styles.modelName}>{activeLead.interested_service || 'No interest specified'}</p>
                         </div>
                     ) : null}
                 </DragOverlay>
