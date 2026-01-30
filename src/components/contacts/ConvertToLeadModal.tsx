@@ -90,27 +90,35 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
         e.preventDefault();
         if (!contact || !pipelineId || !stageId) return;
 
-        const platformName = contact.form_name.split(' ')[0];
+        try {
+            const platformName = contact.form_name.split(' ')[0];
+            const newLead = await leadsService.addLead({
+                name: contact.name,
+                email: contact.email,
+                phone: contact.phone || '',
+                company: contact.company || '',
+                source: `${platformName} (Form)`,
+                pipeline_id: pipelineId,
+                stage_id: stageId,
+                status: 'New',
+                interested_service: interestedService,
+                budget: Number(budget) || 0,
+                assigned_to: assignedTo,
+                priority: priority,
+                notes: notes
+            });
 
-        await leadsService.addLead({
-            name: contact.name,
-            email: contact.email,
-            phone: contact.phone || '',
-            company: contact.company || '',
-            source: `${platformName} (Form)`,
-            pipeline_id: pipelineId,
-            stage_id: stageId,
-            status: 'New',
-            interested_service: interestedService,
-            budget: Number(budget) || 0,
-            assigned_to: assignedTo,
-            priority: priority,
-            notes: notes
-        });
-
-        await leadsService.deleteContact(contact.id);
-        onConverted();
-        onClose();
+            if (newLead) {
+                await leadsService.deleteContact(contact.id);
+                onConverted();
+                onClose();
+            } else {
+                alert('Failed to convert contact. Please check your connection and try again.');
+            }
+        } catch (err) {
+            console.error('Conversion error:', err);
+            alert('An unexpected error occurred during conversion.');
+        }
     };
 
     if (!isOpen || !contact) return null;

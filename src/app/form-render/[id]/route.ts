@@ -36,7 +36,16 @@ export async function GET(
     // Increment visit count
     await leadsService.incrementFormVisits(formId);
 
-    const customFields = form.custom_fields || [];
+    let customFields = form.custom_fields || [];
+
+    // Add default fields if none are present
+    if (customFields.length === 0) {
+        customFields = [
+            { id: 'name', label: 'Full Name', type: 'text', required: true },
+            { id: 'email', label: 'Email Address', type: 'email', required: true },
+            { id: 'phone', label: 'Phone Number', type: 'tel', required: false }
+        ];
+    }
 
     // Generate HTML form
     const fieldsHTML = customFields.map(field => {
