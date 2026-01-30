@@ -59,7 +59,7 @@ export default function PublicFormPage() {
                 form_id: form.id,
                 form_name: form.name,
                 form_data: formData
-            });
+            }, (form as any).user_id);
 
             await leadsService.incrementFormSubmissions(form.id);
             setSubmitted(true);

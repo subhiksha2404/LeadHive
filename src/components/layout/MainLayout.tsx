@@ -12,7 +12,7 @@ import {
     Settings,
     LogOut,
     Search,
-    Layers,
+    Workflow,
     FileText,
     Inbox
 } from 'lucide-react';
@@ -21,7 +21,7 @@ import styles from './Layout.module.css';
 const initialNavItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Leads', icon: Users, path: '/leads', count: 0 },
-    { name: 'Pipelines', icon: Layers, path: '/pipelines' },
+    { name: 'Pipelines', icon: Workflow, path: '/pipelines' },
     { name: 'Forms', icon: FileText, path: '/forms' },
     { name: 'Contacts', icon: Inbox, path: '/contacts', count: 0 },
     { name: 'Management', icon: Settings, path: '/management' },
