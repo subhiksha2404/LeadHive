@@ -243,6 +243,7 @@ export default function ManagementPage() {
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Phone</th>
+                                    <th>Source</th>
                                     <th>Pipeline</th>
                                     <th>Stage</th>
                                     <th>Assigned To</th>
@@ -250,37 +251,62 @@ export default function ManagementPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {leads.map(lead => (
-                                    <tr key={lead.id} className={selectedLeads.includes(lead.id) ? styles.selectedRow : ''}>
-                                        <td><input type="checkbox" checked={selectedLeads.includes(lead.id)} onChange={() => handleSelectLead(lead.id)} /></td>
-                                        <td>
-                                            <div className={styles.name}>{lead.name}</div>
-                                            <div className={styles.company}>{lead.company}</div>
-                                        </td>
-                                        <td>{lead.email}</td>
-                                        <td>{lead.phone}</td>
-                                        <td>{lead.pipeline_name || 'Main Pipeline'}</td>
-                                        <td>
-                                            <span className={styles.statusBadge} style={{
-                                                backgroundColor: lead.stage_color ? `${lead.stage_color}15` : '#f1f5f9',
-                                                color: lead.stage_color || '#64748b',
-                                                borderColor: lead.stage_color ? `${lead.stage_color}30` : '#e2e8f0',
-                                                borderStyle: 'solid',
-                                                borderWidth: '1px'
-                                            }}>
-                                                {lead.status}
-                                            </span>
-                                        </td>
-                                        <td>{lead.assigned_to}</td>
-                                        <td>
-                                            <div className={styles.actions}>
-                                                <button onClick={() => { setViewingLead(lead); setIsDetailsOpen(true); }} className={styles.actionBtn} title="View Details"><Eye size={16} /></button>
-                                                <a href="https://meet.google.com/new" target="_blank" className={styles.actionBtn} title="Schedule Meet"><Video size={16} /></a>
-                                                <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${lead.email}`} target="_blank" className={styles.actionBtn} title="Send Gmail"><Mail size={16} /></a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {leads.map(lead => {
+                                    const getSourceColor = (source?: string) => {
+                                        const s = source?.toLowerCase() || '';
+                                        if (s.includes('facebook')) return '#1877F2';
+                                        if (s.includes('google')) return '#EA4335';
+                                        if (s.includes('twitter')) return '#1DA1F2';
+                                        if (s.includes('website')) return '#3b82f6';
+                                        if (s.includes('referral')) return '#10b981';
+                                        if (s.includes('offline')) return '#8b5cf6';
+                                        return '#64748b';
+                                    };
+                                    const sourceColor = getSourceColor(lead.source);
+
+                                    return (
+                                        <tr key={lead.id} className={selectedLeads.includes(lead.id) ? styles.selectedRow : ''}>
+                                            <td><input type="checkbox" checked={selectedLeads.includes(lead.id)} onChange={() => handleSelectLead(lead.id)} /></td>
+                                            <td>
+                                                <div className={styles.name}>{lead.name}</div>
+                                                <div className={styles.company}>{lead.company}</div>
+                                            </td>
+                                            <td>{lead.email}</td>
+                                            <td>{lead.phone}</td>
+                                            <td>
+                                                <span className={styles.sourceTag} style={{
+                                                    backgroundColor: `${sourceColor}10`,
+                                                    color: sourceColor,
+                                                    borderColor: `${sourceColor}30`,
+                                                    borderStyle: 'solid',
+                                                    borderWidth: '1px'
+                                                }}>
+                                                    {lead.source}
+                                                </span>
+                                            </td>
+                                            <td>{lead.pipeline_name || 'Main Pipeline'}</td>
+                                            <td>
+                                                <span className={styles.statusBadge} style={{
+                                                    backgroundColor: lead.stage_color ? `${lead.stage_color}15` : '#f1f5f9',
+                                                    color: lead.stage_color || '#64748b',
+                                                    borderColor: lead.stage_color ? `${lead.stage_color}30` : '#e2e8f0',
+                                                    borderStyle: 'solid',
+                                                    borderWidth: '1px'
+                                                }}>
+                                                    {lead.status}
+                                                </span>
+                                            </td>
+                                            <td>{lead.assigned_to}</td>
+                                            <td>
+                                                <div className={styles.actions}>
+                                                    <button onClick={() => { setViewingLead(lead); setIsDetailsOpen(true); }} className={styles.actionBtn} title="View Details"><Eye size={16} /></button>
+                                                    <a href="https://meet.google.com/new" target="_blank" className={styles.actionBtn} title="Schedule Meet"><Video size={16} /></a>
+                                                    <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${lead.email}`} target="_blank" className={styles.actionBtn} title="Send Gmail"><Mail size={16} /></a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     )}

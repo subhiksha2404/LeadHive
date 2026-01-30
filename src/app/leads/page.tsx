@@ -31,7 +31,7 @@ export default function LeadsPage() {
     const [search, setSearch] = useState(initialSearch);
     const [leads, setLeads] = useState<Lead[]>([]);
     const [pipelines, setPipelines] = useState<Pipeline[]>([]);
-    const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(initialPipelineId);
+    const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(initialPipelineId || 'general');
     const [stages, setStages] = useState<Stage[]>([]);
     const [statusFilter, setStatusFilter] = useState('all');
     const [sourceFilter, setSourceFilter] = useState('all');
@@ -58,7 +58,7 @@ export default function LeadsPage() {
         setPipelines(finalPipelines);
 
         if (!selectedPipelineId && finalPipelines.length > 0) {
-            setSelectedPipelineId(finalPipelines[0].id);
+            setSelectedPipelineId(view === 'list' ? 'general' : finalPipelines[0].id);
         }
 
         setLoading(false);
@@ -79,13 +79,16 @@ export default function LeadsPage() {
 
     useEffect(() => {
         const fetchStages = async () => {
-            if (selectedPipeline) {
+            if (selectedPipelineId === 'general') {
+                const sData = await leadsService.getAllStages();
+                setStages(sData);
+            } else if (selectedPipeline) {
                 const sData = await leadsService.getStages(selectedPipeline.id);
                 setStages(sData);
             }
         };
         fetchStages();
-    }, [selectedPipeline]);
+    }, [selectedPipeline, selectedPipelineId]);
 
     // Update URL when pipeline changes
     useEffect(() => {
@@ -286,6 +289,18 @@ export default function LeadsPage() {
                                 const leadPipeline = pipelines.find(p => p.id === lead.pipeline_id) || pipelines[0];
                                 const leadStage = stages.find(s => s.id === lead.stage_id);
 
+                                const getSourceColor = (source?: string) => {
+                                    const s = source?.toLowerCase() || '';
+                                    if (s.includes('facebook')) return '#1877F2';
+                                    if (s.includes('google')) return '#EA4335';
+                                    if (s.includes('twitter')) return '#1DA1F2';
+                                    if (s.includes('website')) return '#3b82f6';
+                                    if (s.includes('referral')) return '#10b981';
+                                    if (s.includes('offline')) return '#8b5cf6';
+                                    return '#64748b';
+                                };
+                                const sourceColor = getSourceColor(lead.source);
+
                                 return (
                                     <tr key={lead.id}>
                                         <td>
@@ -303,16 +318,24 @@ export default function LeadsPage() {
                                             </div>
                                         </td>
                                         <td>
-                                            <span className={styles.sourceTag}>{lead.source}</span>
+                                            <span className={styles.sourceTag} style={{
+                                                backgroundColor: `${sourceColor}10`,
+                                                color: sourceColor,
+                                                borderColor: `${sourceColor}30`,
+                                                borderStyle: 'solid',
+                                                borderWidth: '1px'
+                                            }}>
+                                                {lead.source}
+                                            </span>
                                         </td>
                                         <td>
                                             <span style={{ fontWeight: 500 }}>{leadPipeline?.name || 'Main Pipeline'}</span>
                                         </td>
                                         <td>
                                             <span className={`${styles.statusBadge}`} style={{
-                                                backgroundColor: leadStage?.color ? `${leadStage.color}15` : '#f1f5f9',
-                                                color: leadStage?.color || '#64748b',
-                                                borderColor: leadStage?.color ? `${leadStage.color}30` : '#e2e8f0',
+                                                backgroundColor: (leadStage?.color || lead.stage_color) ? `${leadStage?.color || lead.stage_color}15` : '#f1f5f9',
+                                                color: leadStage?.color || lead.stage_color || '#64748b',
+                                                borderColor: (leadStage?.color || lead.stage_color) ? `${leadStage?.color || lead.stage_color}30` : '#e2e8f0',
                                                 borderStyle: 'solid',
                                                 borderWidth: '1px'
                                             }}>

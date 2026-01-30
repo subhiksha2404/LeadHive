@@ -100,14 +100,24 @@ export const leadsService = {
     getLeads: async (): Promise<Lead[]> => {
         const { data, error } = await (supabase as any)
             .from('leads')
-            .select('*')
+            .select(`
+                *,
+                pipeline:pipelines(name),
+                stage:pipeline_stages(name, color)
+            `)
             .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Error fetching leads:', error);
             return [];
         }
-        return data as Lead[];
+
+        // Map joined data to the flat Lead interface
+        return (data as any[]).map(l => ({
+            ...l,
+            pipeline_name: l.pipeline?.name,
+            stage_color: l.stage?.color
+        })) as Lead[];
     },
 
     getLeadById: async (id: string): Promise<Lead | undefined> => {
