@@ -49,11 +49,12 @@ export interface Contact {
     created_at: string;
 }
 
-const sanitizeLeadForDb = (lead: any, userId: string) => {
+const sanitizeLeadForDb = (lead: any, userId?: string) => {
     const {
         id, created_at, updated_at,
         pipeline_name, stage_color,
         customFields, custom_fields,
+        user_id, // Strip user_id to prevent accidental ownership changes on update
         ...rest
     } = lead;
 
@@ -65,14 +66,24 @@ const sanitizeLeadForDb = (lead: any, userId: string) => {
         'pipeline_id', 'stage_id'
     ];
 
-    const dbLead: any = {
-        user_id: userId,
-        custom_fields: custom_fields || customFields || {}
-    };
+    const dbLead: any = {};
+    if (userId) dbLead.user_id = userId;
+
+    // Explicitly handle custom_fields mapping
+    if (custom_fields !== undefined || customFields !== undefined) {
+        dbLead.custom_fields = custom_fields || customFields || {};
+    }
 
     validColumns.forEach(col => {
         if (rest[col] !== undefined) {
-            dbLead[col] = rest[col];
+            let val = rest[col];
+            // Normalize empty strings to null for specific types to avoid DB errors
+            if (val === '') {
+                if (col === 'budget' || col === 'next_follow_up' || col === 'assigned_to' || col === 'pipeline_id' || col === 'stage_id') {
+                    val = null;
+                }
+            }
+            dbLead[col] = val;
         }
     });
 
@@ -114,7 +125,7 @@ export const leadsService = {
     },
 
     updateLead: async (id: string, updates: Partial<Lead>): Promise<Lead | null> => {
-        const { pipeline_name, stage_color, ...dbUpdates } = updates as any;
+        const dbUpdates = sanitizeLeadForDb(updates);
 
         const { data, error } = await (supabase as any)
             .from('leads')

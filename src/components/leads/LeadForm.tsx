@@ -38,6 +38,20 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
     const [pipelines, setPipelines] = useState<Pipeline[]>([]);
     const [availableStages, setAvailableStages] = useState<Stage[]>([]);
 
+    const formatDateForInput = (dateString?: string) => {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            // Offset for local timezone to match what user sees
+            const tzOffset = date.getTimezoneOffset() * 60000;
+            const localISOTime = new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+            return localISOTime;
+        } catch (e) {
+            return '';
+        }
+    };
+
     const [formData, setFormData] = useState({
         name: initialData?.name || '',
         email: initialData?.email || '',
@@ -49,7 +63,7 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
         interested_service: initialData?.interested_service || '',
         budget: initialData?.budget || '',
         assigned_to: initialData?.assigned_to || '',
-        next_follow_up: initialData?.next_follow_up || '',
+        next_follow_up: formatDateForInput(initialData?.next_follow_up),
         notes: initialData?.notes || '',
         pipeline_id: initialData?.pipeline_id || '',
         stage_id: initialData?.stage_id || ''
