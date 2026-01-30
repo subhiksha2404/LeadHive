@@ -476,16 +476,16 @@ export const leadsService = {
     },
 
     incrementFormVisits: async (id: string): Promise<void> => {
-        const form = await leadsService.getFormById(id);
-        if (form) {
-            await leadsService.updateForm(id, { visits: (form.visits || 0) + 1 });
+        const { error } = await (supabase as any).rpc('increment_form_visits', { form_id: id });
+        if (error) {
+            console.error('Error incrementing visits:', error);
         }
     },
 
     incrementFormSubmissions: async (id: string): Promise<void> => {
-        const form = await leadsService.getFormById(id);
-        if (form) {
-            await leadsService.updateForm(id, { submissions: (form.submissions || 0) + 1 });
+        const { error } = await (supabase as any).rpc('increment_form_submissions', { form_id: id });
+        if (error) {
+            console.error('Error incrementing submissions:', error);
         }
     },
 

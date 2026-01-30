@@ -20,7 +20,7 @@
 .leftSection {
     display: flex;
     align-items: center;
-    gap: 3rem;
+    gap: 2rem;
 }
 
 .logo {
@@ -96,7 +96,7 @@
     background-color: #f1f5f9;
     padding: 0.4rem 0.75rem;
     border-radius: var(--radius-md);
-    width: 320px;
+    width: 220px;
     gap: 0.5rem;
 }
 
