@@ -34,7 +34,7 @@ export async function POST(
             form_id: form.id,
             form_name: form.name,
             form_data: formData
-        });
+        }, (form as any).user_id);
 
         // Increment submission count
         await leadsService.incrementFormSubmissions(form.id);

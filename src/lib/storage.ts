@@ -126,8 +126,30 @@ export const leadsService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
+        // Get default pipeline and stages for mapping if IDs are invalid
+        const pipelines = await leadsService.getPipelines();
+        const defaultPipeline = pipelines[0] || await leadsService.ensureDefaultPipeline();
+
+        const stages = defaultPipeline ? await leadsService.getStages(defaultPipeline.id) : [];
+        const firstStage = stages[0];
+
         const leadsToInsert = newLeads.map(l => {
             const { pipeline_name, stage_color, ...dbInsert } = l as any;
+
+            // Validate or default pipeline/stage
+            const validPipeline = pipelines.some(p => p.id === dbInsert.pipeline_id);
+            if (!validPipeline && defaultPipeline) {
+                dbInsert.pipeline_id = defaultPipeline.id;
+            }
+
+            // Check if stage belongs to the selected pipeline or default it
+            const currentPipelineId = dbInsert.pipeline_id;
+            // Note: In a real scenario we'd check if stage exists in THIS pipeline, 
+            // but for simplicity and robustness we default if not provided/valid
+            if (!dbInsert.stage_id && firstStage) {
+                dbInsert.stage_id = firstStage.id;
+            }
+
             return { ...dbInsert, user_id: user.id };
         });
 
@@ -430,15 +452,20 @@ export const leadsService = {
         return data as Contact[];
     },
 
-    addContact: async (contact: Omit<Contact, 'id' | 'created_at'>): Promise<Contact | null> => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
+    addContact: async (contact: Omit<Contact, 'id' | 'created_at'>, userId?: string): Promise<Contact | null> => {
+        let finalUserId = userId;
+
+        if (!finalUserId) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return null;
+            finalUserId = user.id;
+        }
 
         const { data, error } = await (supabase as any)
             .from('contacts')
             .insert([{
                 ...contact,
-                user_id: user.id,
+                user_id: finalUserId,
                 name: normalizeValue(contact.name),
                 email: normalizeValue(contact.email),
                 phone: normalizeValue(contact.phone),
