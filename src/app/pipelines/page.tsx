@@ -4,16 +4,13 @@ import { useState, useEffect } from 'react';
 import {
     Plus,
     Layers,
-    MoreVertical,
     Edit2,
     Trash2,
     GripVertical,
-    X,
-    Palette
+    X
 } from 'lucide-react';
 import { leadsService, Pipeline, Stage } from '@/lib/storage';
 import styles from './Pipelines.module.css';
-
 
 export default function PipelinesPage() {
     const [pipelines, setPipelines] = useState<Pipeline[]>([]);
@@ -31,66 +28,69 @@ export default function PipelinesPage() {
     const [stageName, setStageName] = useState('');
     const [stageColor, setStageColor] = useState('#6366f1');
 
-    const fetchData = () => {
-        const data = leadsService.getPipelines();
+    const fetchPipelines = async () => {
+        const data = await leadsService.getPipelines();
         setPipelines(data);
-        if (data.length > 0 && !selectedPipeline) {
-            setSelectedPipeline(data[0]);
-            fetchDataStages(data[0].id);
-        } else if (selectedPipeline) {
-            fetchDataStages(selectedPipeline.id);
+        if (data.length > 0) {
+            if (!selectedPipeline) {
+                setSelectedPipeline(data[0]);
+                fetchStages(data[0].id);
+            } else {
+                // Refresh stages for current pipeline
+                fetchStages(selectedPipeline.id);
+            }
         }
     };
 
-    const fetchDataStages = (pipelineId: string) => {
-        setStages(leadsService.getStages(pipelineId));
+    const fetchStages = async (pipelineId: string) => {
+        const data = await leadsService.getStages(pipelineId);
+        setStages(data);
     };
 
     useEffect(() => {
-        fetchData();
+        fetchPipelines();
     }, []);
 
-    const handleCreatePipeline = (e: React.FormEvent) => {
+    const handleCreatePipeline = async (e: React.FormEvent) => {
         e.preventDefault();
         if (editingPipeline) {
-            leadsService.updatePipeline(editingPipeline.id, pipelineName);
+            await leadsService.updatePipeline(editingPipeline.id, pipelineName);
         } else {
-            const newP = leadsService.createPipeline(pipelineName);
-            // If it's the first pipeline, select it
-            if (pipelines.length === 0) {
+            const newP = await leadsService.createPipeline(pipelineName);
+            if (newP && pipelines.length === 0) {
                 setSelectedPipeline(newP);
-                fetchDataStages(newP.id);
+                await fetchStages(newP.id);
             }
         }
         setPipelineName('');
         setEditingPipeline(null);
         setIsPipelineModalOpen(false);
-        fetchData();
+        await fetchPipelines();
     };
 
-    const handleDeletePipeline = (id: string, e: React.MouseEvent) => {
+    const handleDeletePipeline = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (confirm('Are you sure you want to delete this pipeline? All stages and data associated will be lost.')) {
-            leadsService.deletePipeline(id);
+            await leadsService.deletePipeline(id);
             if (selectedPipeline?.id === id) {
                 setSelectedPipeline(null);
                 setStages([]);
             }
-            fetchData();
+            await fetchPipelines();
         }
     };
 
-    const handleCreateStage = (e: React.FormEvent) => {
+    const handleCreateStage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedPipeline) return;
 
         if (editingStage) {
-            leadsService.updateStage(editingStage.id, {
+            await leadsService.updateStage(editingStage.id, {
                 name: stageName,
                 color: stageColor
             });
         } else {
-            leadsService.createStage({
+            await leadsService.createStage({
                 pipeline_id: selectedPipeline.id,
                 name: stageName,
                 color: stageColor,
@@ -101,13 +101,13 @@ export default function PipelinesPage() {
         setStageColor('#6366f1');
         setEditingStage(null);
         setIsStageModalOpen(false);
-        fetchDataStages(selectedPipeline.id);
+        await fetchStages(selectedPipeline.id);
     };
 
-    const handleDeleteStage = (id: string) => {
+    const handleDeleteStage = async (id: string) => {
         if (confirm('Are you sure you want to delete this stage?')) {
-            leadsService.deleteStage(id);
-            if (selectedPipeline) fetchDataStages(selectedPipeline.id);
+            await leadsService.deleteStage(id);
+            if (selectedPipeline) await fetchStages(selectedPipeline.id);
         }
     };
 
@@ -144,7 +144,7 @@ export default function PipelinesPage() {
                                     className={`${styles.pipelineItem} ${selectedPipeline?.id === p.id ? styles.activePipeline : ''}`}
                                     onClick={() => {
                                         setSelectedPipeline(p);
-                                        fetchDataStages(p.id);
+                                        fetchStages(p.id);
                                     }}
                                 >
                                     <span>{p.name}</span>
@@ -197,7 +197,6 @@ export default function PipelinesPage() {
                                     <div className={styles.emptyState}>
                                         <Layers size={48} strokeWidth={1} style={{ marginBottom: '1rem', opacity: 0.5 }} />
                                         <p>No stages defined for this pipeline.</p>
-                                        <p style={{ fontSize: '0.875rem' }}>Add stages like Enquiry, Contacted, Negotiating, etc.</p>
                                     </div>
                                 ) : (
                                     stages.map((stage) => (
@@ -238,7 +237,7 @@ export default function PipelinesPage() {
                         <div className={styles.emptyState}>
                             <Layers size={64} strokeWidth={1} style={{ marginBottom: '1.5rem', opacity: 0.3 }} />
                             <h3>Select a Pipeline</h3>
-                            <p>Choose a pipeline from the sidebar to manage its stages or create a new one.</p>
+                            <p>Choose a pipeline from the sidebar to manage its stages.</p>
                         </div>
                     )}
                 </main>
@@ -259,7 +258,6 @@ export default function PipelinesPage() {
                                     <input
                                         type="text"
                                         className={styles.formInput}
-                                        placeholder="e.g. Real Estate Sales, Digital Marketing"
                                         value={pipelineName}
                                         onChange={(e) => setPipelineName(e.target.value)}
                                         required
@@ -291,7 +289,6 @@ export default function PipelinesPage() {
                                     <input
                                         type="text"
                                         className={styles.formInput}
-                                        placeholder="e.g. Discovery Call, Proposal Sent"
                                         value={stageName}
                                         onChange={(e) => setStageName(e.target.value)}
                                         required
@@ -300,24 +297,14 @@ export default function PipelinesPage() {
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label className={styles.formLabel}>Stage Color</label>
-                                    <div className={styles.colorInputWrapper} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <input
                                             type="color"
-                                            className={styles.colorInput}
                                             value={stageColor}
                                             onChange={(e) => setStageColor(e.target.value)}
-                                            style={{
-                                                width: '50px',
-                                                height: '50px',
-                                                padding: '0',
-                                                border: 'none',
-                                                borderRadius: '8px',
-                                                cursor: 'pointer'
-                                            }}
+                                            style={{ width: '50px', height: '50px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
                                         />
-                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                                            Selected: <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>{stageColor}</span>
-                                        </span>
+                                        <span>{stageColor}</span>
                                     </div>
                                 </div>
                             </div>

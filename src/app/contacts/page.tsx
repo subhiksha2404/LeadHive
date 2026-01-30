@@ -22,8 +22,9 @@ export default function ContactsPage() {
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<{ count: number, show: boolean }>({ count: 0, show: false });
 
-    const fetchContacts = () => {
-        setContacts(leadsService.getContacts().sort((a, b) =>
+    const fetchContacts = async () => {
+        const data = await leadsService.getContacts();
+        setContacts(data.sort((a, b) =>
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         ));
     };
@@ -32,7 +33,7 @@ export default function ContactsPage() {
         setIsSyncing(true);
         const result = await leadsService.syncJotformSubmissions();
         if (result.newContacts > 0) {
-            fetchContacts();
+            await fetchContacts();
             setSyncResult({ count: result.newContacts, show: true });
             setTimeout(() => setSyncResult(prev => ({ ...prev, show: false })), 3000);
         }
@@ -44,10 +45,10 @@ export default function ContactsPage() {
         handleSync(); // Sync on mount
     }, []);
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (confirm('Delete this contact permanently?')) {
-            leadsService.deleteContact(id);
-            fetchContacts();
+            await leadsService.deleteContact(id);
+            await fetchContacts();
         }
     };
 

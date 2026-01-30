@@ -29,23 +29,9 @@ export default function LeadsPage() {
 
     const [view, setView] = useState<'list' | 'kanban'>('list');
     const [search, setSearch] = useState(initialSearch);
-    const [leads, setLeads] = useState<Lead[]>(() => {
-        if (typeof window !== 'undefined') return leadsService.getLeads();
-        return [];
-    });
-    const [pipelines, setPipelines] = useState<Pipeline[]>(() => {
-        if (typeof window !== 'undefined') {
-            const data = leadsService.getPipelines();
-            return data.length > 0 ? data : [leadsService.ensureDefaultPipeline()];
-        }
-        return [];
-    });
-    const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(() => {
-        if (typeof window !== 'undefined') {
-            return initialPipelineId || (pipelines.length > 0 ? pipelines[0].id : null);
-        }
-        return initialPipelineId;
-    });
+    const [leads, setLeads] = useState<Lead[]>([]);
+    const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+    const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(initialPipelineId);
     const [stages, setStages] = useState<Stage[]>([]);
     const [statusFilter, setStatusFilter] = useState('all');
     const [sourceFilter, setSourceFilter] = useState('all');
@@ -53,24 +39,30 @@ export default function LeadsPage() {
     const [viewingLead, setViewingLead] = useState<Lead | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    const fetchData = useCallback(() => {
-        const leadsData = leadsService.getLeads();
-        setLeads(leadsData);
-        setLoading(false);
-    }, []);
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        const [leadsData, pipelinesData] = await Promise.all([
+            leadsService.getLeads(),
+            leadsService.getPipelines()
+        ]);
 
-    // Update URL when pipeline changes
-    useEffect(() => {
-        if (isMounted && selectedPipelineId) {
-            const params = new URLSearchParams(searchParams.toString());
-            params.set('p', selectedPipelineId);
-            router.replace(`/leads?${params.toString()}`, { scroll: false });
+        let finalPipelines = pipelinesData;
+        if (pipelinesData.length === 0) {
+            const defaultPipeline = await leadsService.ensureDefaultPipeline();
+            if (defaultPipeline) finalPipelines = [defaultPipeline];
         }
 
-        setStatusFilter('all');
-    }, [selectedPipelineId, isMounted, router, searchParams]);
+        setLeads(leadsData);
+        setPipelines(finalPipelines);
+
+        if (!selectedPipelineId && finalPipelines.length > 0) {
+            setSelectedPipelineId(finalPipelines[0].id);
+        }
+
+        setLoading(false);
+    }, [selectedPipelineId]);
 
     useEffect(() => {
         setIsMounted(true);
@@ -86,10 +78,24 @@ export default function LeadsPage() {
     }, [pipelines, selectedPipelineId]);
 
     useEffect(() => {
-        if (selectedPipeline) {
-            setStages(leadsService.getStages(selectedPipeline.id));
-        }
+        const fetchStages = async () => {
+            if (selectedPipeline) {
+                const sData = await leadsService.getStages(selectedPipeline.id);
+                setStages(sData);
+            }
+        };
+        fetchStages();
     }, [selectedPipeline]);
+
+    // Update URL when pipeline changes
+    useEffect(() => {
+        if (isMounted && selectedPipelineId) {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('p', selectedPipelineId);
+            router.replace(`/leads?${params.toString()}`, { scroll: false });
+        }
+        setStatusFilter('all');
+    }, [selectedPipelineId, isMounted, router, searchParams]);
 
     const activeLeads = useMemo(() => {
         if (selectedPipelineId === 'general') return leads;
@@ -105,7 +111,6 @@ export default function LeadsPage() {
     const filteredLeads = useMemo(() => {
         let filtered = [...activeLeads];
 
-        // Search
         if (search) {
             const query = search.toLowerCase();
             filtered = filtered.filter(l =>
@@ -115,30 +120,25 @@ export default function LeadsPage() {
             );
         }
 
-        // Status Filter
         if (statusFilter !== 'all') {
             filtered = filtered.filter(l => l.status === statusFilter);
         }
 
-        // Source Filter
         if (sourceFilter !== 'all') {
             filtered = filtered.filter(l => l.source && l.source.toLowerCase().includes(sourceFilter.toLowerCase()));
         }
 
-        // Sorting
         filtered.sort((a, b) => {
-            const aLead = a as Lead;
-            const bLead = b as Lead;
             if (sortBy === 'Date Created') {
-                return new Date(bLead.created_at || 0).getTime() - new Date(aLead.created_at || 0).getTime();
+                return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
             } else if (sortBy === 'Budget') {
-                return (Number(bLead.budget) || 0) - (Number(aLead.budget) || 0);
+                return (Number(b.budget) || 0) - (Number(a.budget) || 0);
             } else if (sortBy === 'Priority') {
                 const priorityOrder: Record<string, number> = { 'High': 3, 'Medium': 2, 'Low': 1 };
-                return (priorityOrder[bLead.priority || 'Medium'] || 0) - (priorityOrder[aLead.priority || 'Medium'] || 0);
+                return (priorityOrder[b.priority || 'Medium'] || 0) - (priorityOrder[a.priority || 'Medium'] || 0);
             } else if (sortBy === 'Follow up due') {
-                const aDate = aLead.next_follow_up ? new Date(aLead.next_follow_up).getTime() : Infinity;
-                const bDate = bLead.next_follow_up ? new Date(bLead.next_follow_up).getTime() : Infinity;
+                const aDate = a.next_follow_up ? new Date(a.next_follow_up).getTime() : Infinity;
+                const bDate = b.next_follow_up ? new Date(b.next_follow_up).getTime() : Infinity;
                 return aDate - bDate;
             }
             return 0;
@@ -147,8 +147,9 @@ export default function LeadsPage() {
         return filtered;
     }, [activeLeads, search, statusFilter, sourceFilter, sortBy]);
 
-    const handleLeadMove = (id: string, newStatus: string, stageId?: string) => {
-        leadsService.updateLead(id, { status: newStatus, stage_id: stageId });
+    const handleLeadMove = async (id: string, newStatus: string, stageId?: string) => {
+        await leadsService.updateLead(id, { status: newStatus, stage_id: stageId });
+        await fetchData();
     };
 
     return (
@@ -166,7 +167,6 @@ export default function LeadsPage() {
                 </div>
             </header>
 
-            {/* Filters Bar */}
             <div className={styles.filtersBar}>
                 <div className={styles.searchWrapper}>
                     <Search size={18} />
@@ -177,7 +177,6 @@ export default function LeadsPage() {
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
-
 
                 <div className={styles.selectWrapper}>
                     <select
@@ -207,30 +206,25 @@ export default function LeadsPage() {
                     <ChevronDown size={16} />
                 </div>
 
-
-
                 <div className={styles.viewToggle}>
                     <button
                         className={`${styles.toggleBtn} ${view === 'list' ? styles.activeToggle : ''}`}
                         onClick={() => setView('list')}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingRight: '1rem' }}
                     >
                         <List size={18} />
-                        <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>List View</span>
+                        <span>List View</span>
                     </button>
                     <button
                         className={`${styles.toggleBtn} ${view === 'kanban' ? styles.activeToggle : ''}`}
                         onClick={() => {
-                            if (selectedPipelineId === 'general') {
-                                const firstPipeline = pipelines[0];
-                                if (firstPipeline) setSelectedPipelineId(firstPipeline.id);
+                            if (selectedPipelineId === 'general' && pipelines.length > 0) {
+                                setSelectedPipelineId(pipelines[0].id);
                             }
                             setView('kanban');
                         }}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingRight: '1rem' }}
                     >
                         <Grid2X2 size={18} />
-                        <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>Kanban View</span>
+                        <span>Kanban View</span>
                     </button>
                 </div>
             </div>
@@ -290,14 +284,15 @@ export default function LeadsPage() {
                         <tbody>
                             {filteredLeads.map((lead) => {
                                 const leadPipeline = pipelines.find(p => p.id === lead.pipeline_id) || pipelines[0];
-                                const leadStage = leadsService.getStages(lead.pipeline_id || leadPipeline?.id).find(s => s.id === lead.stage_id);
+                                const leadStage = stages.find(s => s.id === lead.stage_id);
 
                                 return (
                                     <tr key={lead.id}>
                                         <td>
                                             <div className={styles.leadName}>{lead.name}</div>
-                                            <div className={styles.leadDate}>Created at {new Date(lead.created_at || Date.now()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }).replace(', ', ',     ')}</div>
-
+                                            <div className={styles.leadDate}>
+                                                Created at {lead.created_at ? new Date(lead.created_at).toLocaleString('en-IN') : 'N/A'}
+                                            </div>
                                         </td>
                                         <td>
                                             <div className={styles.contactItem}>
@@ -330,7 +325,7 @@ export default function LeadsPage() {
                                             </span>
                                         </td>
                                         <td>{lead.interested_service}</td>
-                                        <td>₹{isMounted ? (lead.budget || 0).toLocaleString('en-IN') : (lead.budget || 0).toString()}</td>
+                                        <td>₹{(lead.budget || 0).toLocaleString('en-IN')}</td>
                                         <td>{lead.assigned_to}</td>
                                         <td>
                                             <div className={styles.actions}>
@@ -360,7 +355,6 @@ export default function LeadsPage() {
                     onPreview={(lead) => { setViewingLead(lead); setIsDetailsOpen(true); }}
                 />
             )}
-
 
             <LeadDetailsModal
                 isOpen={isDetailsOpen}

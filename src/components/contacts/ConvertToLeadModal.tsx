@@ -10,7 +10,7 @@ import {
     Tag,
     UserCircle
 } from 'lucide-react';
-import { leadsService, Contact } from '@/lib/storage';
+import { leadsService, Contact, Form } from '@/lib/storage';
 import { Pipeline, Stage } from '@/types/lead';
 import styles from './ConvertToLeadModal.module.css';
 
@@ -24,6 +24,7 @@ interface ConvertToLeadModalProps {
 export default function ConvertToLeadModal({ contact, isOpen, onClose, onConverted }: ConvertToLeadModalProps) {
     const [pipelines, setPipelines] = useState<Pipeline[]>([]);
     const [stages, setStages] = useState<Stage[]>([]);
+    const [formDef, setFormDef] = useState<Form | undefined>(undefined);
 
     // Form State
     const [pipelineId, setPipelineId] = useState('');
@@ -35,59 +36,63 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
     const [notes, setNotes] = useState('');
 
     useEffect(() => {
-        if (isOpen && contact) {
-            const pData = leadsService.getPipelines();
-            setPipelines(pData);
-            // Don't auto-select - leave empty by default
-            setPipelineId('');
-            setStages([]);
+        const loadInitialData = async () => {
+            if (isOpen && contact) {
+                const pData = await leadsService.getPipelines();
+                setPipelines(pData);
+                setPipelineId('');
+                setStages([]);
 
-            // Intelligent Note Extraction
-            // Find fields that define "Notes" or "Message"
-            const formDef = leadsService.getFormById(contact.form_id);
-            let extractedNotes = '';
+                const fDef = await leadsService.getFormById(contact.form_id);
+                setFormDef(fDef);
 
-            if (formDef) {
-                // 1. Look for explicit textarea types
-                const noteField = formDef.custom_fields.find(f =>
-                    f.type === 'textarea' ||
-                    f.label.toLowerCase().includes('note') ||
-                    f.label.toLowerCase().includes('message')
-                );
+                let extractedNotes = '';
+                if (fDef) {
+                    const noteField = fDef.custom_fields.find(f =>
+                        f.type === 'textarea' ||
+                        f.label.toLowerCase().includes('note') ||
+                        f.label.toLowerCase().includes('message')
+                    );
 
-                if (noteField && contact.form_data[noteField.id]) {
-                    extractedNotes = String(contact.form_data[noteField.id]);
+                    if (noteField && contact.form_data[noteField.id]) {
+                        extractedNotes = String(contact.form_data[noteField.id]);
+                    }
                 }
-            }
 
-            // Fallback: If no definition or field found, check keys in data
-            if (!extractedNotes) {
-                const keys = Object.keys(contact.form_data);
-                const likelyNoteKey = keys.find(k => k.toLowerCase().includes('note') || k.toLowerCase().includes('message'));
-                if (likelyNoteKey) {
-                    extractedNotes = String(contact.form_data[likelyNoteKey]);
+                if (!extractedNotes) {
+                    const keys = Object.keys(contact.form_data);
+                    const likelyNoteKey = keys.find(k => k.toLowerCase().includes('note') || k.toLowerCase().includes('message'));
+                    if (likelyNoteKey) {
+                        extractedNotes = String(contact.form_data[likelyNoteKey]);
+                    }
                 }
-            }
 
-            setNotes(extractedNotes);
-        }
+                setNotes(extractedNotes);
+            }
+        };
+
+        loadInitialData();
     }, [isOpen, contact]);
 
-    const handlePipelineChange = (pid: string) => {
+    const handlePipelineChange = async (pid: string) => {
         setPipelineId(pid);
-        const sData = leadsService.getStages(pid);
-        setStages(sData);
-        if (sData.length > 0) setStageId(sData[0].id);
+        if (pid) {
+            const sData = await leadsService.getStages(pid);
+            setStages(sData);
+            if (sData.length > 0) setStageId(sData[0].id);
+        } else {
+            setStages([]);
+            setStageId('');
+        }
     };
 
-    const handleConvert = (e: React.FormEvent) => {
+    const handleConvert = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!contact || !pipelineId || !stageId) return;
 
-        // Extract platform from form name (e.g., "Website contact form" -> "Website")
         const platformName = contact.form_name.split(' ')[0];
 
-        leadsService.addLead({
+        await leadsService.addLead({
             name: contact.name,
             email: contact.email,
             phone: contact.phone || '',
@@ -95,7 +100,7 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
             source: `${platformName} (Form)`,
             pipeline_id: pipelineId,
             stage_id: stageId,
-            status: 'New', // Placeholder
+            status: 'New',
             interested_service: interestedService,
             budget: Number(budget) || 0,
             assigned_to: assignedTo,
@@ -103,7 +108,7 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
             notes: notes
         });
 
-        leadsService.deleteContact(contact.id);
+        await leadsService.deleteContact(contact.id);
         onConverted();
         onClose();
     };
@@ -130,17 +135,7 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
                                     <label>Pipeline</label>
                                     <select
                                         value={pipelineId}
-                                        onChange={(e) => {
-                                            const pid = e.target.value;
-                                            setPipelineId(pid);
-                                            if (pid) {
-                                                setStages(leadsService.getStages(pid));
-                                                setStageId('');
-                                            } else {
-                                                setStages([]);
-                                                setStageId('');
-                                            }
-                                        }}
+                                        onChange={(e) => handlePipelineChange(e.target.value)}
                                         required
                                     >
                                         <option value="">Select Pipeline</option>
@@ -221,7 +216,7 @@ export default function ConvertToLeadModal({ contact, isOpen, onClose, onConvert
                                 <p><strong>Submitted:</strong> {new Date(contact.created_at).toLocaleString()}</p>
                                 <hr style={{ margin: '0.5rem 0', borderColor: '#e2e8f0' }} />
                                 {Object.entries(contact.form_data).map(([key, value]) => {
-                                    const fieldLabel = leadsService.getFormById(contact.form_id)?.custom_fields.find(f => f.id === key)?.label || key;
+                                    const fieldLabel = formDef?.custom_fields.find(f => f.id === key)?.label || key;
                                     return (
                                         <div key={key} style={{ marginBottom: '0.25rem' }}>
                                             <span style={{ fontWeight: 600 }}>{fieldLabel}:</span> {String(value)}

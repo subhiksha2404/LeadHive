@@ -25,6 +25,7 @@ interface FormField {
 export default function NewFormPage() {
     const router = useRouter();
     const [name, setName] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     // Default fields that are always present or recommended
     const [fields, setFields] = useState<FormField[]>([
@@ -63,16 +64,21 @@ export default function NewFormPage() {
         handleUpdateField(fieldId, { options });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name) return;
+        if (!name || isSaving) return;
 
-        leadsService.createForm({
-            name,
-            custom_fields: fields
-        });
-
-        router.push('/forms');
+        setIsSaving(true);
+        try {
+            await leadsService.createForm({
+                name,
+                custom_fields: fields
+            });
+            router.push('/forms');
+        } catch (error) {
+            console.error('Error saving form:', error);
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -208,9 +214,9 @@ export default function NewFormPage() {
 
                         <div className={styles.actions}>
                             <button type="button" onClick={() => router.back()} className={styles.secondaryBtn}>Cancel</button>
-                            <button type="submit" className={styles.primaryBtn}>
+                            <button type="submit" className={styles.primaryBtn} disabled={isSaving}>
                                 <Save size={18} />
-                                <span>Save Form</span>
+                                <span>{isSaving ? 'Saving...' : 'Save Form'}</span>
                             </button>
                         </div>
                     </div>
@@ -245,6 +251,7 @@ export default function NewFormPage() {
                                     </div>
                                 ))}
 
+                                {/* Permanent Submit Button in Preview */}
                                 <button type="button" className={styles.mockBtn} disabled>Submit</button>
                             </div>
                         </div>

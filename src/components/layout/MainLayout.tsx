@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { leadsService } from '@/lib/storage';
@@ -75,30 +75,22 @@ export default function MainLayout({
     }, [user, loading, isAuthPage, router]);
 
     // 3. Stats update logic
+    const updateCounts = useCallback(async () => {
+        if (!user) return;
+        const [leads, contacts] = await Promise.all([
+            leadsService.getLeads(),
+            leadsService.getContacts()
+        ]);
+        setStats({ leadsCount: leads.length, contactsCount: contacts.length });
+    }, [user]);
+
     useEffect(() => {
-        const updateCounts = () => {
-            const leads = leadsService.getLeads();
-            const contacts = leadsService.getContacts();
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
-
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(23, 59, 59, 999);
-
-            const pendingFollowUps = leads.filter(l => {
-                if (!l.next_follow_up) return false;
-                const followUpDate = new Date(l.next_follow_up);
-                return followUpDate <= tomorrow;
-            }).length;
-
-            setStats({ leadsCount: leads.length, contactsCount: contacts.length });
-        };
-
-        updateCounts();
+        if (!loading && user) {
+            updateCounts();
+        }
         window.addEventListener('leads-updated', updateCounts);
         return () => window.removeEventListener('leads-updated', updateCounts);
-    }, []);
+    }, [user, loading, updateCounts]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();

@@ -8,10 +8,8 @@ import {
     Trash2,
     ExternalLink,
     FileText,
-    BarChart2,
     CheckCircle2,
     Edit,
-    FileCode,
     Box
 } from 'lucide-react';
 import { leadsService, Form } from '@/lib/storage';
@@ -23,16 +21,21 @@ export default function FormsPage() {
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [jotFormTarget, setJotFormTarget] = useState<{ id: string, name: string } | null>(null);
 
+    const fetchForms = async () => {
+        const data = await leadsService.getForms();
+        setForms(data);
+    };
+
     useEffect(() => {
-        setForms(leadsService.getForms());
+        fetchForms();
     }, []);
 
-    const handleDelete = (id: string, e: React.MouseEvent) => {
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         if (confirm('Are you sure you want to delete this form?')) {
-            leadsService.deleteForm(id);
-            setForms(leadsService.getForms());
+            await leadsService.deleteForm(id);
+            await fetchForms();
         }
     };
 
