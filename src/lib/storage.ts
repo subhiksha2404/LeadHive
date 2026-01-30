@@ -49,6 +49,41 @@ export interface Contact {
     created_at: string;
 }
 
+const sanitizeLeadForDb = (lead: any, userId: string) => {
+    const {
+        id, created_at, updated_at,
+        pipeline_name, stage_color,
+        customFields, custom_fields,
+        ...rest
+    } = lead;
+
+    // Use specific whitelist of columns to avoid 400 errors from extra JSON data
+    const validColumns = [
+        'name', 'email', 'phone', 'company', 'source',
+        'status', 'priority', 'budget', 'assigned_to',
+        'interested_service', 'next_follow_up', 'notes',
+        'pipeline_id', 'stage_id'
+    ];
+
+    const dbLead: any = {
+        user_id: userId,
+        custom_fields: custom_fields || customFields || {}
+    };
+
+    validColumns.forEach(col => {
+        if (rest[col] !== undefined) {
+            dbLead[col] = rest[col];
+        }
+    });
+
+    // Support legacy field names if they exist in source
+    if (rest.interested_model !== undefined && !dbLead.interested_service) {
+        dbLead.interested_service = rest.interested_model;
+    }
+
+    return dbLead;
+};
+
 export const leadsService = {
     // --- Leads ---
     getLeads: async (): Promise<Lead[]> => {
@@ -103,11 +138,9 @@ export const leadsService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return null;
 
-        const { pipeline_name, stage_color, ...dbInsert } = lead as any;
-
         const { data, error } = await (supabase as any)
             .from('leads')
-            .insert([{ ...dbInsert, user_id: user.id }])
+            .insert([sanitizeLeadForDb(lead, user.id)])
             .select()
             .single();
 
@@ -134,7 +167,7 @@ export const leadsService = {
         const firstStage = stages[0];
 
         const leadsToInsert = newLeads.map(l => {
-            const { id, created_at, pipeline_name, stage_color, ...dbInsert } = l as any;
+            const dbInsert = sanitizeLeadForDb(l, user.id);
 
             // Validate or default pipeline/stage
             const validPipeline = pipelines.some(p => p.id === dbInsert.pipeline_id);
@@ -147,7 +180,7 @@ export const leadsService = {
                 dbInsert.stage_id = firstStage.id;
             }
 
-            return { ...dbInsert, user_id: user.id };
+            return dbInsert;
         });
 
         const { error } = await (supabase as any)
@@ -507,7 +540,16 @@ export const leadsService = {
         const params = new URLSearchParams();
         params.append('properties[title]', form.name);
 
-        form.custom_fields.forEach((field, index) => {
+        let customFields = [...form.custom_fields];
+        if (customFields.length === 0) {
+            customFields = [
+                { id: 'name', label: 'Full Name', type: 'text', required: true },
+                { id: 'email', label: 'Email Address', type: 'email', required: true },
+                { id: 'phone', label: 'Phone Number', type: 'tel', required: false }
+            ];
+        }
+
+        customFields.forEach((field, index) => {
             const prefix = `questions[${index}]`;
             let jotType = 'control_textbox';
 

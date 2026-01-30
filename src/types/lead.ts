@@ -26,7 +26,9 @@ export interface Lead {
     interested_service?: string;
     next_follow_up?: string;
     notes?: string;
+    custom_fields?: any;
     created_at?: string;
+    updated_at?: string;
     pipeline_id?: string;
     stage_id?: string;
     // Extended fields (from joins/views)
