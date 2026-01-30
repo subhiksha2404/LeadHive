@@ -6,7 +6,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id: formId } = await params;
-    const form = leadsService.getFormById(formId);
+    const form = await leadsService.getFormById(formId);
 
     if (!form) {
         return new NextResponse(
@@ -34,10 +34,12 @@ export async function GET(
     }
 
     // Increment visit count
-    leadsService.incrementFormVisits(formId);
+    await leadsService.incrementFormVisits(formId);
+
+    const customFields = form.custom_fields || [];
 
     // Generate HTML form
-    const fieldsHTML = form.custom_fields.map(field => {
+    const fieldsHTML = customFields.map(field => {
         const required = field.required ? 'required' : '';
         const requiredMark = field.required ? '<span style="color: #ef4444;">*</span>' : '';
 
@@ -192,7 +194,7 @@ export async function GET(
                 ${fieldsHTML}
                 <button type="submit" class="submit-btn">Submit</button>
             </form>
-
+            
             <div class="success-message" id="successMessage">
                 <div class="success-icon">✓</div>
                 <h2 style="color: #10b981; margin-bottom: 0.5rem;">Thank You!</h2>

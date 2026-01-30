@@ -7,7 +7,7 @@ export async function POST(
 ) {
     try {
         const { id: formId } = await params;
-        const form = leadsService.getFormById(formId);
+        const form = await leadsService.getFormById(formId);
 
         if (!form) {
             return NextResponse.json(
@@ -19,14 +19,15 @@ export async function POST(
         const formData = await request.json();
 
         // Extract contact details from form data
-        const nameField = form.custom_fields.find(f => f.label.toLowerCase().includes('name')) || form.custom_fields[0];
-        const emailField = form.custom_fields.find(f => f.type === 'email') || form.custom_fields.find(f => f.label.toLowerCase().includes('email'));
-        const phoneField = form.custom_fields.find(f => f.type === 'tel') || form.custom_fields.find(f => f.label.toLowerCase().includes('phone'));
-        const companyField = form.custom_fields.find(f => f.label.toLowerCase().includes('company'));
+        const customFields = form.custom_fields || [];
+        const nameField = customFields.find(f => f.label.toLowerCase().includes('name')) || customFields[0];
+        const emailField = customFields.find(f => f.type === 'email') || customFields.find(f => f.label.toLowerCase().includes('email'));
+        const phoneField = customFields.find(f => f.type === 'tel') || customFields.find(f => f.label.toLowerCase().includes('phone'));
+        const companyField = customFields.find(f => f.label.toLowerCase().includes('company'));
 
         // Create contact
-        leadsService.addContact({
-            name: formData[nameField.id] || 'Unknown',
+        await leadsService.addContact({
+            name: nameField ? (formData[nameField.id] || 'Unknown') : 'Unknown',
             email: emailField ? formData[emailField.id] : '',
             phone: phoneField ? formData[phoneField.id] : '',
             company: companyField ? formData[companyField.id] : '',
@@ -36,7 +37,7 @@ export async function POST(
         });
 
         // Increment submission count
-        leadsService.incrementFormSubmissions(form.id);
+        await leadsService.incrementFormSubmissions(form.id);
 
         return NextResponse.json(
             { message: 'Form submitted successfully' },

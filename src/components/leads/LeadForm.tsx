@@ -1,7 +1,6 @@
 "use client";
 
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     User,
     Mail,
@@ -11,11 +10,9 @@ import {
     Calendar,
     MessageSquare,
     IndianRupee,
-    ArrowLeft,
     Building2,
     Layers,
-    GitBranch,
-    MapPin
+    GitBranch
 } from 'lucide-react';
 import styles from './LeadForm.module.css';
 import Link from 'next/link';
@@ -50,7 +47,7 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
         status: initialData?.status || 'New',
         priority: initialData?.priority || 'Medium',
         interested_service: initialData?.interested_service || '',
-        budget: initialData?.budget || '', // Initialize as string to allow clearing
+        budget: initialData?.budget || '',
         assigned_to: initialData?.assigned_to || '',
         next_follow_up: initialData?.next_follow_up || '',
         notes: initialData?.notes || '',
@@ -66,13 +63,13 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
         boxType: 'single'
     });
 
-    useEffect(() => {
-        const pLayers = leadsService.getPipelines();
+    const initData = useCallback(async () => {
+        const pLayers = await leadsService.getPipelines();
         setPipelines(pLayers);
 
         if (pLayers.length > 0) {
             const currentPid = formData.pipeline_id || pLayers[0].id;
-            const stages = leadsService.getStages(currentPid);
+            const stages = await leadsService.getStages(currentPid);
             setAvailableStages(stages);
 
             if (!formData.pipeline_id) {
@@ -84,10 +81,14 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
                 }));
             }
         }
-    }, []);
+    }, [formData.pipeline_id]);
 
-    const handlePipelineChange = (pipelineId: string) => {
-        const stages = leadsService.getStages(pipelineId);
+    useEffect(() => {
+        initData();
+    }, [initData]);
+
+    const handlePipelineChange = async (pipelineId: string) => {
+        const stages = await leadsService.getStages(pipelineId);
         setAvailableStages(stages);
         setFormData(prev => ({
             ...prev,
@@ -127,7 +128,6 @@ export default function LeadForm({ initialData, onSubmit, onCancel }: LeadFormPr
         if (type === 'checkbox') {
             finalValue = (e.target as HTMLInputElement).checked;
         } else if (name === 'budget') {
-            // Allow empty string or numbers
             finalValue = value === '' ? '' : Number(value);
         } else {
             finalValue = value;

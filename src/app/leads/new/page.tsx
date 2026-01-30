@@ -11,8 +11,8 @@ import { leadsService } from '@/lib/storage';
 export default function NewLeadPage() {
     const router = useRouter();
 
-    const handleCreateLead = (data: any) => {
-        leadsService.addLead(data);
+    const handleCreateLead = async (data: any) => {
+        await leadsService.addLead(data);
         router.push('/leads');
     };
 

@@ -1,33 +1,35 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import LeadForm from '@/components/leads/LeadForm';
 import { leadsService } from '@/lib/storage';
-import styles from '../../new/NewLead.module.css'; // Reusing the same professional styles
+import styles from '../../new/NewLead.module.css';
 
 export default function EditLeadPage() {
     const router = useRouter();
     const params = useParams();
     const [lead, setLead] = useState<any>(null);
 
-    useEffect(() => {
+    const fetchLead = useCallback(async () => {
         if (params.id) {
-            const data = leadsService.getLeadById(params.id as string);
+            const data = await leadsService.getLeadById(params.id as string);
             if (data) {
                 setLead(data);
             } else {
-                // If lead not found, maybe redirect or show error
                 console.error("Lead not found");
-                // Optional: router.push('/leads');
             }
         }
     }, [params.id]);
 
-    const handleUpdateLead = (data: any) => {
+    useEffect(() => {
+        fetchLead();
+    }, [fetchLead]);
+
+    const handleUpdateLead = async (data: any) => {
         if (params.id) {
-            leadsService.updateLead(params.id as string, data);
+            await leadsService.updateLead(params.id as string, data);
             router.push('/leads');
         }
     };

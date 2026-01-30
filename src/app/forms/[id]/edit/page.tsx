@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
     ArrowLeft,
@@ -30,18 +30,22 @@ export default function EditFormPage() {
     const [loading, setLoading] = useState(true);
     const [newFieldType, setNewFieldType] = useState<string>('text');
 
-    useEffect(() => {
+    const fetchForm = useCallback(async () => {
         if (params.id) {
-            const form = leadsService.getFormById(params.id as string);
+            const form = await leadsService.getFormById(params.id as string);
             if (form) {
                 setName(form.name);
-                setFields(form.custom_fields);
+                setFields(form.custom_fields || []);
                 setLoading(false);
             } else {
                 router.push('/forms');
             }
         }
-    }, [params.id]);
+    }, [params.id, router]);
+
+    useEffect(() => {
+        fetchForm();
+    }, [fetchForm]);
 
     const handleAddField = () => {
         const newField: FormField = {
@@ -71,11 +75,11 @@ export default function EditFormPage() {
         handleUpdateField(fieldId, { options });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name) return;
 
-        leadsService.updateForm(params.id as string, {
+        await leadsService.updateForm(params.id as string, {
             name,
             custom_fields: fields
         });
@@ -103,7 +107,6 @@ export default function EditFormPage() {
 
             <main className={styles.main}>
                 <form onSubmit={handleSubmit} className={styles.formLayout}>
-                    {/* Left Column: Configuration */}
                     <div className={styles.configColumn}>
                         <section className={styles.section}>
                             <div className={styles.sectionHeader}>
@@ -224,7 +227,6 @@ export default function EditFormPage() {
                         </div>
                     </div>
 
-                    {/* Right Column: Preview */}
                     <div className={styles.previewColumn}>
                         <div className={styles.previewHeader}>
                             <LayoutTemplate size={16} />

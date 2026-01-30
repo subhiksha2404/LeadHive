@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { leadsService, Form } from '@/lib/storage';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
@@ -16,13 +16,14 @@ export default function PublicFormPage() {
     // Dynamic Form Data
     const [formData, setFormData] = useState<Record<string, string>>({});
 
-    useEffect(() => {
+    const fetchForm = useCallback(async () => {
         if (params.id) {
+            setLoading(true);
             const formId = params.id as string;
-            const data = leadsService.getFormById(formId);
+            const data = await leadsService.getFormById(formId);
             if (data) {
                 setForm(data);
-                leadsService.incrementFormVisits(formId);
+                await leadsService.incrementFormVisits(formId);
             } else {
                 setError('Form not found or has been deleted.');
             }
@@ -30,23 +31,28 @@ export default function PublicFormPage() {
         }
     }, [params.id]);
 
+    useEffect(() => {
+        fetchForm();
+    }, [fetchForm]);
+
     const handleChange = (fieldId: string, value: string) => {
         setFormData(prev => ({ ...prev, [fieldId]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form) return;
 
         // Extract contact details (Naive approach by field type/label fallback)
-        const nameField = form.custom_fields.find(f => f.label.toLowerCase().includes('name')) || form.custom_fields[0];
-        const emailField = form.custom_fields.find(f => f.type === 'email') || form.custom_fields.find(f => f.label.toLowerCase().includes('email'));
-        const phoneField = form.custom_fields.find(f => f.type === 'tel') || form.custom_fields.find(f => f.label.toLowerCase().includes('phone'));
-        const companyField = form.custom_fields.find(f => f.label.toLowerCase().includes('company'));
+        const customFields = form.custom_fields || [];
+        const nameField = customFields.find(f => f.label.toLowerCase().includes('name')) || customFields[0];
+        const emailField = customFields.find(f => f.type === 'email') || customFields.find(f => f.label.toLowerCase().includes('email'));
+        const phoneField = customFields.find(f => f.type === 'tel') || customFields.find(f => f.label.toLowerCase().includes('phone'));
+        const companyField = customFields.find(f => f.label.toLowerCase().includes('company'));
 
         try {
-            leadsService.addContact({
-                name: formData[nameField.id] || 'Unknown',
+            await leadsService.addContact({
+                name: nameField ? (formData[nameField.id] || 'Unknown') : 'Unknown',
                 email: emailField ? formData[emailField.id] : '',
                 phone: phoneField ? formData[phoneField.id] : '',
                 company: companyField ? formData[companyField.id] : '',
@@ -55,7 +61,7 @@ export default function PublicFormPage() {
                 form_data: formData
             });
 
-            leadsService.incrementFormSubmissions(form.id);
+            await leadsService.incrementFormSubmissions(form.id);
             setSubmitted(true);
         } catch (err) {
             setError('Something went wrong. Please try again.');
@@ -102,7 +108,7 @@ export default function PublicFormPage() {
                 </header>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    {form.custom_fields.map(field => (
+                    {(form.custom_fields || []).map(field => (
                         <div key={field.id} className={styles.formGroup}>
                             <label>{field.label} {field.required && <span style={{ color: 'red' }}>*</span>}</label>
 

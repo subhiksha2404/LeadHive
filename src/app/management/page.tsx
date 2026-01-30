@@ -16,10 +16,11 @@ import {
 } from 'lucide-react';
 import LeadDetailsModal from '@/components/leads/LeadDetailsModal';
 import styles from './Management.module.css';
-import { leadsService, Lead } from '@/lib/storage';
+import { leadsService, Lead, Stage } from '@/lib/storage';
 
 export default function ManagementPage() {
     const [leads, setLeads] = useState<Lead[]>([]);
+    const [stages, setStages] = useState<Stage[]>([]);
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
     const [actionDropdownOpen, setActionDropdownOpen] = useState(false);
     const [pendingAction, setPendingAction] = useState<{ type: 'assign' | 'status' | 'delete' | null, value?: string }>({ type: null });
@@ -30,8 +31,12 @@ export default function ManagementPage() {
 
     const fetchData = useCallback(async () => {
         setLoading(true);
-        const data = await leadsService.getLeads();
-        setLeads(data);
+        const [leadsData, stagesData] = await Promise.all([
+            leadsService.getLeads(),
+            leadsService.getAllStages()
+        ]);
+        setLeads(leadsData);
+        setStages(stagesData);
         setLoading(false);
     }, []);
 
@@ -209,8 +214,8 @@ export default function ManagementPage() {
                             {pendingAction.type === 'status' && (
                                 <select className={styles.actionSelect} onChange={(e) => setPendingAction({ ...pendingAction, value: e.target.value })} value={pendingAction.value || ''}>
                                     <option value="" disabled>Select Status...</option>
-                                    {leadsService.getAllStagesSync().map(stage => (
-                                        <option key={stage.id} value={stage.name}>{stage.name}</option>
+                                    {[...new Set(stages.map(s => s.name))].map(stageName => (
+                                        <option key={stageName} value={stageName}>{stageName}</option>
                                     ))}
                                 </select>
                             )}

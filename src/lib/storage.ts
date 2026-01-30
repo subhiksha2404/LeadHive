@@ -52,7 +52,7 @@ export interface Contact {
 export const leadsService = {
     // --- Leads ---
     getLeads: async (): Promise<Lead[]> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('leads')
             .select('*')
             .order('created_at', { ascending: false });
@@ -65,7 +65,7 @@ export const leadsService = {
     },
 
     getLeadById: async (id: string): Promise<Lead | undefined> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('leads')
             .select('*')
             .eq('id', id)
@@ -79,9 +79,11 @@ export const leadsService = {
     },
 
     updateLead: async (id: string, updates: Partial<Lead>): Promise<Lead | null> => {
-        const { data, error } = await supabase
+        const { pipeline_name, stage_color, ...dbUpdates } = updates as any;
+
+        const { data, error } = await (supabase as any)
             .from('leads')
-            .update(updates)
+            .update(dbUpdates)
             .eq('id', id)
             .select()
             .single();
@@ -101,9 +103,11 @@ export const leadsService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return null;
 
-        const { data, error } = await supabase
+        const { pipeline_name, stage_color, ...dbInsert } = lead as any;
+
+        const { data, error } = await (supabase as any)
             .from('leads')
-            .insert([{ ...lead, user_id: user.id }])
+            .insert([{ ...dbInsert, user_id: user.id }])
             .select()
             .single();
 
@@ -122,8 +126,12 @@ export const leadsService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const leadsToInsert = newLeads.map(l => ({ ...l, user_id: user.id }));
-        const { error } = await supabase
+        const leadsToInsert = newLeads.map(l => {
+            const { pipeline_name, stage_color, ...dbInsert } = l as any;
+            return { ...dbInsert, user_id: user.id };
+        });
+
+        const { error } = await (supabase as any)
             .from('leads')
             .insert(leadsToInsert);
 
@@ -138,7 +146,7 @@ export const leadsService = {
     },
 
     deleteLead: async (id: string): Promise<boolean> => {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('leads')
             .delete()
             .eq('id', id);
@@ -156,7 +164,7 @@ export const leadsService = {
 
     // --- Pipelines ---
     getPipelines: async (): Promise<Pipeline[]> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('pipelines')
             .select('*')
             .order('created_at', { ascending: true });
@@ -194,7 +202,7 @@ export const leadsService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return null;
 
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('pipelines')
             .insert([{ name, user_id: user.id }])
             .select()
@@ -208,7 +216,7 @@ export const leadsService = {
     },
 
     updatePipeline: async (id: string, name: string): Promise<Pipeline | null> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('pipelines')
             .update({ name })
             .eq('id', id)
@@ -223,7 +231,7 @@ export const leadsService = {
     },
 
     deletePipeline: async (id: string): Promise<void> => {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('pipelines')
             .delete()
             .eq('id', id);
@@ -235,7 +243,7 @@ export const leadsService = {
 
     // --- Stages ---
     getAllStages: async (): Promise<Stage[]> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('pipeline_stages')
             .select('*')
             .order('order', { ascending: true });
@@ -248,7 +256,7 @@ export const leadsService = {
     },
 
     getStages: async (pipelineId: string): Promise<Stage[]> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('pipeline_stages')
             .select('*')
             .eq('pipeline_id', pipelineId)
@@ -262,7 +270,7 @@ export const leadsService = {
     },
 
     createStage: async (stage: Omit<Stage, 'id'>): Promise<Stage | null> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('pipeline_stages')
             .insert([stage])
             .select()
@@ -276,7 +284,7 @@ export const leadsService = {
     },
 
     updateStage: async (id: string, updates: Partial<Stage>): Promise<Stage | null> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('pipeline_stages')
             .update(updates)
             .eq('id', id)
@@ -291,7 +299,7 @@ export const leadsService = {
     },
 
     deleteStage: async (id: string): Promise<void> => {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('pipeline_stages')
             .delete()
             .eq('id', id);
@@ -303,7 +311,7 @@ export const leadsService = {
 
     // --- Forms ---
     getForms: async (): Promise<Form[]> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('lead_forms')
             .select('*')
             .order('created_at', { ascending: false });
@@ -312,14 +320,14 @@ export const leadsService = {
             console.error('Error fetching forms:', error);
             return [];
         }
-        return data.map(d => ({
+        return (data as any[]).map(d => ({
             ...d,
             custom_fields: d.fields || []
         })) as Form[];
     },
 
     getFormById: async (id: string): Promise<Form | undefined> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('lead_forms')
             .select('*')
             .eq('id', id)
@@ -331,7 +339,7 @@ export const leadsService = {
         }
         return {
             ...data,
-            custom_fields: data.fields || []
+            custom_fields: (data as any).fields || []
         } as Form;
     },
 
@@ -339,7 +347,7 @@ export const leadsService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return null;
 
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('lead_forms')
             .insert([{
                 name: form.name,
@@ -355,7 +363,7 @@ export const leadsService = {
         }
         return {
             ...data,
-            custom_fields: data.fields || []
+            custom_fields: (data as any).fields || []
         } as Form;
     },
 
@@ -366,7 +374,7 @@ export const leadsService = {
             delete dbUpdates.custom_fields;
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('lead_forms')
             .update(dbUpdates)
             .eq('id', id)
@@ -379,12 +387,12 @@ export const leadsService = {
         }
         return {
             ...data,
-            custom_fields: data.fields || []
+            custom_fields: (data as any).fields || []
         } as Form;
     },
 
     deleteForm: async (id: string): Promise<void> => {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('lead_forms')
             .delete()
             .eq('id', id);
@@ -410,7 +418,7 @@ export const leadsService = {
 
     // --- Contacts ---
     getContacts: async (): Promise<Contact[]> => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('contacts')
             .select('*')
             .order('created_at', { ascending: false });
@@ -426,7 +434,7 @@ export const leadsService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return null;
 
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('contacts')
             .insert([{
                 ...contact,
@@ -451,7 +459,7 @@ export const leadsService = {
     },
 
     deleteContact: async (id: string): Promise<void> => {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('contacts')
             .delete()
             .eq('id', id);

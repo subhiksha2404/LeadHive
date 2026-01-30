@@ -29,4 +29,7 @@ export interface Lead {
     created_at?: string;
     pipeline_id?: string;
     stage_id?: string;
+    // Extended fields (from joins/views)
+    pipeline_name?: string;
+    stage_color?: string;
 }
